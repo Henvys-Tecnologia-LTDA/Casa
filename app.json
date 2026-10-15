@@ -1,0 +1,67 @@
+{
+  "expo": {
+    "name": "Casa a Dois",
+    "slug": "casa-a-dois",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "casaadois",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#FBF1EF",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.casaadois.app"
+    },
+    "android": {
+      "package": "com.casaadois.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#FBF1EF",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "web": {
+      "output": "single",
+      "favicon": "./assets/images/favicon.png",
+      "name": "Casa a Dois",
+      "shortName": "Casa a Dois",
+      "themeColor": "#FBF1EF",
+      "backgroundColor": "#FBF1EF",
+      "lang": "pt-BR"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FBF1EF",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 120
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O app usa suas fotos para mostrar os itens, apês e viagens de vocês.",
+          "cameraPermission": "O app usa a câmera para fotografar itens, apês e viagens."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false,
+      "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "efabde7f-87bc-4ab3-b7a9-894ada03670d"
+      }
+    }
+  }
+}

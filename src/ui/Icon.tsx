@@ -1,0 +1,81 @@
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
+
+// Ícones da página (traço 1.8, pontas arredondadas), desenhados com react-native-svg.
+
+type Shape = string | { r: [number, number, number, number, number] } | { c: [number, number, number] };
+
+const ICONS: Record<string, Shape[]> = {
+  house: ['M3 11l9-7 9 7', 'M5 9.5V20h14V9.5', 'M10 20v-5.5h4V20'],
+  switch: [{ r: [2, 6, 20, 12, 3.5] }, 'M6.5 6v12M17.5 6v12', { c: [4.3, 10, 0.6] }, { c: [19.7, 14, 0.6] }],
+  building: [{ r: [5, 3, 14, 18, 1.5] }, 'M9 7h1.5M13.5 7H15M9 11h1.5M13.5 11H15M9 15h1.5M13.5 15H15M10.5 21v-3h3v3'],
+  truck: ['M2 6h11v10H2z', 'M13 9h4.5L21 12.5V16h-8z', { c: [6, 17.5, 1.8] }, { c: [17, 17.5, 1.8] }],
+  sofa: ['M5 11V8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3', 'M3 11a2 2 0 0 1 2 2v1h14v-1a2 2 0 1 1 4 0v4a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-4a2 2 0 0 1 2-2z', 'M5 18v2M19 18v2'],
+  pot: ['M4 10h16v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z', 'M2 10h2M20 10h2', 'M9 4.5v2.5M12 3.5v3.5M15 4.5v2.5'],
+  bed: ['M3 19V6', 'M3 14h18v5', 'M21 14v-1.5A3.5 3.5 0 0 0 17.5 9H11v5', { c: [7, 11, 2] }],
+  bath: ['M3 12h18v2.5A5.5 5.5 0 0 1 15.5 20h-7A5.5 5.5 0 0 1 3 14.5z', 'M6 12V6a2 2 0 0 1 3.6-1.2', 'M8 20l-1 2M16 20l1 2'],
+  washer: [{ r: [4, 3, 16, 18, 2.5] }, { c: [12, 13, 4.5] }, 'M7.5 6.5h.01M11 6.5h4'],
+  desk: [{ r: [3, 4, 18, 12, 1.5] }, 'M8 20h8M12 16v4'],
+  plant: ['M12 20v-8', 'M12 12c0-4 3-7 7-7 0 4-3 7-7 7z', 'M12 14.5c0-3-2.5-5.5-6-5.5 0 3.5 2.5 5.5 6 5.5z', 'M7 20h10'],
+  broom: ['M15 3l-3.5 8', 'M7 11h9l2 10H5z', 'M9 15v6M12.5 15v6'],
+  box: ['M3 7.5L12 3l9 4.5v9L12 21l-9-4.5z', 'M3 7.5l9 4.5 9-4.5M12 12v9'],
+  gamepad: ['M6.5 7h11A4.5 4.5 0 0 1 22 11.5v1a4 4 0 0 1-7.2 2.4L14 14h-4l-.8.9A4 4 0 0 1 2 12.5v-1A4.5 4.5 0 0 1 6.5 7z', 'M7 9.5v3.5M5.25 11.25h3.5', { c: [16, 10.5, 0.8] }, { c: [18, 12.5, 0.8] }],
+  joycon: [{ r: [3, 3.5, 7, 17, 3.5] }, { r: [14, 3.5, 7, 17, 3.5] }, { c: [6.5, 9, 1.3] }, { c: [17.5, 15, 1.3] }],
+  ticket: ['M3 7h18v3a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4z', 'M14.5 7v2M14.5 11v2M14.5 15v2'],
+  plus: ['M12 5v14M5 12h14'],
+  pencil: ['M4 20h4L19 9l-4-4L4 16z', 'M13.5 6.5l4 4'],
+  back: ['M15 5l-7 7 7 7'],
+  undo: ['M9 7L4 12l5 5', 'M4 12h11a5 5 0 0 1 0 10h-2'],
+  ext: ['M14 4h6v6', 'M20 4l-9 9', 'M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5'],
+  image: [{ r: [3, 4, 18, 16, 2] }, { c: [9, 10, 2] }, 'M21 16l-5-5-9 9'],
+  check: ['M5 12.5l4.5 4.5L19 7.5'],
+  x: ['M6 6l12 12M18 6L6 18'],
+  trash: ['M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3'],
+  search: [{ c: [11, 11, 7] }, 'M20 20l-4-4'],
+  heart: ['M12 20.5s-7.4-4.5-9.2-9.1C1.5 8 3.5 4.5 7 4.5c2 0 3.3 1 4.1 2.3.7-1.3 2.1-2.3 4.1-2.3 3.5 0 5.5 3.5 4.2 6.9-1.8 4.6-9.4 9.1-9.4 9.1z'],
+  users: [{ c: [9, 8, 3] }, 'M3 20a6 6 0 0 1 12 0', { c: [17, 9, 2.5] }, 'M16 14.2a5 5 0 0 1 5.5 4.8'],
+  gift: [{ r: [3, 8, 18, 4, 1] }, 'M5 12v8h14v-8M12 8v12', 'M12 8c-1.5-3-5-3.5-5-1.5S10 8 12 8zM12 8c1.5-3 5-3.5 5-1.5S14 8 12 8z'],
+  star: ['M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z'],
+  calendar: [{ r: [3.5, 5, 17, 15, 2] }, 'M3.5 10h17M8 3v4M16 3v4'],
+  wallet: ['M5 7V6a2 2 0 0 1 2-2h11v3', { r: [3, 7, 18, 13, 2] }, { c: [16.5, 13.5, 1.3] }],
+  flag: ['M5 21V4', 'M5 4h12l-2.5 4L17 12H5'],
+  trophy: ['M8 4h8v5a4 4 0 0 1-8 0z', 'M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M9 20h6'],
+  sliders: ['M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0', { c: [16, 6, 2] }, { c: [10, 12, 2] }, { c: [18, 18, 2] }],
+  alert: ['M12 3l9.5 17h-19z', 'M12 10v4.5M12 17.5h.01'],
+  suitcase: [{ r: [3, 7, 18, 13, 2.5] }, 'M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M8 7v13M16 7v13'],
+  plane: ['M10.2 13.8L4 12l-1.5-1.5L4 9.6l7.4 1.2 4.4-4.6c.9-.9 2.6-1.4 3.3-.7.7.7.2 2.4-.7 3.3l-4.6 4.4 1.2 7.4-.9 1.5-1.5-1.5-1.8-6.2-3 2.9.3 2.3-1.1 1.1-1.3-2.7-2.7-1.3 1.1-1.1 2.3.3z'],
+  shield: ['M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z', 'M9 12l2 2 4-4'],
+  camera: [{ r: [3, 7, 18, 13, 2] }, 'M8 7l1.5-3h5L16 7', { c: [12, 13.5, 3.5] }],
+  info: [{ c: [12, 12, 9] }, 'M12 11v6M12 7.5h.01'],
+  logout: ['M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3', 'M10 17l-5-5 5-5', 'M5 12h11'],
+  copy: [{ r: [8, 8, 12, 12, 2] }, 'M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2'],
+  share: ['M12 3v12', 'M7 8l5-5 5 5', 'M5 13v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6'],
+  refresh: ['M20 11a8 8 0 0 0-14.6-4.5L4 8', 'M4 4v4h4', 'M4 13a8 8 0 0 0 14.6 4.5L20 16', 'M20 20v-4h-4'],
+};
+
+export const ICON_NAMES = Object.keys(ICONS);
+
+export function Icon({ name, size = 20, color = '#2A2320', fill, strokeWidth = 1.8 }: {
+  name: string; size?: number; color?: string; fill?: boolean; strokeWidth?: number;
+}) {
+  const shapes = ICONS[name] || ICONS.box;
+  const common = {
+    stroke: fill ? 'none' : color,
+    strokeWidth,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+    fill: fill ? color : 'none',
+  };
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      {shapes.map((s, k) => {
+        if (typeof s === 'string') return <Path key={k} d={s} {...common} />;
+        if ('r' in s) {
+          const [x, y, w, h, rx] = s.r;
+          return <Rect key={k} x={x} y={y} width={w} height={h} rx={rx} {...common} />;
+        }
+        const [cx, cy, r] = s.c;
+        return <Circle key={k} cx={cx} cy={cy} r={r} {...common} />;
+      })}
+    </Svg>
+  );
+}
