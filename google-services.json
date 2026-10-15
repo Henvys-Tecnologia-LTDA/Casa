@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1034107629679",
+    "project_id": "casa-a-dois-d0ae4",
+    "storage_bucket": "casa-a-dois-d0ae4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1034107629679:android:d0a9c7a3567d0ee44edd9a",
+        "android_client_info": {
+          "package_name": "com.casaadois.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDrxdaAJCjl8NUwvkWQcsU4d5iDBHMnrik"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
