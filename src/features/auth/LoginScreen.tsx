@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { friendlyError, supabase } from '@/lib/supabase';
@@ -44,8 +45,8 @@ export function LoginScreen() {
   }
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: C.bg }}>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 20, paddingTop: insets.top + 30, paddingBottom: insets.bottom + 30, gap: 22, maxWidth: 480, width: '100%', alignSelf: 'center' }}>
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <KeyboardAwareScrollView bottomOffset={30} keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 20, paddingTop: insets.top + 30, paddingBottom: insets.bottom + 30, gap: 22, maxWidth: 480, width: '100%', alignSelf: 'center' }}>
         <View style={{ gap: 6 }}>
           <Txt w="medium" size={11.5} color={C.coral} upper track={3.2}>Planejamento a dois</Txt>
           <Text style={{ fontFamily: F.medium, fontSize: 40, lineHeight: 46, color: C.ink, letterSpacing: -1.4 }}>
@@ -63,7 +64,7 @@ export function LoginScreen() {
           <Btn label={mode === 'entrar' ? 'Entrar' : 'Criar conta'} onPress={submit} busy={busy} />
         </Card>
         <Muted size={12.5} style={{ textAlign: 'center' }}>Cada casal só vê os próprios dados.</Muted>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
+    </View>
   );
 }

@@ -7,7 +7,7 @@ import type { Goal } from '@/lib/types';
 import { Legend, StackedBars, type Series } from '@/ui/Chart';
 import { Icon } from '@/ui/Icon';
 import { Btn, Card, Dot, DuoBar, Empty, Meter, Muted, Note, Panel, Pill, Serif, Summary, Txt, ViewHead } from '@/ui/kit';
-import { AppHeader, Loading, Screen } from '@/ui/Screen';
+import { AppHeader, Appear, Loading, Screen } from '@/ui/Screen';
 import { ACCENT, C, R, soft } from '@/ui/theme';
 
 import { useSheets } from '../sheetsCtx';
@@ -25,7 +25,7 @@ export function MoneyScreen() {
   const saved = gs.reduce((s, g) => s + g.saved, 0), left = gs.reduce((s, g) => s + g.left, 0), per = gs.reduce((s, g) => s + g.per, 0);
   const any = cal.some(m => m.total > 0);
   const used = SRC.filter(([k]) => cal.some(m => m.src[k] > 0));
-  const series: Series[] = used.map(([k, t]) => ({ key: k, label: t, color: SRC_COLORS[k] }));
+  const series: Series[] = used.map(([k, t]) => ({ key: k, label: k === 'ape' ? t : d.tabLabel(k), color: SRC_COLORS[k] }));
   const accent = ACCENT.dinheiro;
 
   return (
@@ -42,7 +42,7 @@ export function MoneyScreen() {
           <ViewHead title="Metas do casal" sub="Juntem dinheiro para a entrada do apê, a reserva ou o que vier." />
           {goals.length ? (
             <View style={{ gap: 12 }}>
-              {goals.map(g => <GoalCard key={g.id} g={g} />)}
+              {goals.map((g, k) => <Appear key={g.id} i={k}><GoalCard g={g} /></Appear>)}
               <Pressable onPress={() => sheets.open({ kind: 'goal', goal: null })}
                 style={({ pressed }) => ({ borderWidth: 1, borderStyle: 'dashed', borderColor: pressed ? C.ink : C.line, borderRadius: R.card, padding: 20, alignItems: 'center', gap: 8 })}>
                 <Icon name="plus" color={C.muted} />

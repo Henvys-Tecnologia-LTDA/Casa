@@ -34,7 +34,7 @@ export function ToastProvider({ children, bottom = 92 }: { children: ReactNode; 
           entering={FadeInDown.duration(220)}
           exiting={FadeOutDown.duration(180)}
           pointerEvents="box-none"
-          style={{ position: 'absolute', left: 16, right: 16, bottom: bottom + insets.bottom, alignItems: 'center' }}>
+          style={{ position: 'absolute', left: 16, right: 16, bottom: bottom + insets.bottom, alignItems: 'center', zIndex: 1200, elevation: 1200 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.ink, borderRadius: 999, paddingVertical: 10, paddingLeft: 16, paddingRight: t.action ? 8 : 18, maxWidth: 520 }}>
             <Icon name={t.icon} size={16} color={t.icon === 'heart' ? C.heart : C.bg} fill={t.icon === 'heart'} />
             <Txt w="semibold" size={14} color={C.bg} style={{ flexShrink: 1 }}>{t.msg}</Txt>

@@ -13,10 +13,10 @@ export const WINDOW = 12;
 export const SHOP: ShopList[] = ['casa', 'switch'];
 export const TABS = {
   casa: { label: 'Casa', icon: 'house', unit: 'cômodo', units: 'cômodos', Units: 'Cômodos', novo: 'Novo cômodo', defIcon: 'box', done: 'completo', boughtLbl: 'Comprados' },
-  switch: { label: 'Switch 2', icon: 'switch', unit: 'seção', units: 'seções', Units: 'Seções', novo: 'Nova seção', defIcon: 'gamepad', done: 'completa', boughtLbl: 'Já temos' },
+  switch: { label: 'Console', icon: 'gamepad', unit: 'seção', units: 'seções', Units: 'Seções', novo: 'Nova seção', defIcon: 'gamepad', done: 'completa', boughtLbl: 'Já temos' },
 } as const;
 
-export const SRC: [keyof CalendarMonth['src'], string][] = [['casa', 'Casa'], ['switch', 'Switch 2'], ['ape', 'Apê'], ['viagem', 'Viagem']];
+export const SRC: [keyof CalendarMonth['src'], string][] = [['casa', 'Casa'], ['switch', 'Console'], ['ape', 'Apê'], ['viagem', 'Viagem']];
 export const CATS: [string, string, string][] = [
   ['passagens', 'Passagens', 'plane'], ['hospedagem', 'Hospedagem', 'bed'], ['passeios', 'Passeios', 'camera'], ['alimentacao', 'Alimentação', 'pot'],
   ['transporte', 'Transporte local', 'truck'], ['seguro', 'Seguro viagem', 'shield'], ['compras', 'Compras', 'gift'], ['outros', 'Outros', 'box'],

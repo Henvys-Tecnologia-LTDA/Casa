@@ -5,6 +5,8 @@ import {
   type KeyboardTypeOptions, type StyleProp, type TextStyle, type ViewStyle,
 } from 'react-native';
 
+import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming, ZoomIn } from 'react-native-reanimated';
+
 import { Icon } from './Icon';
 import { ACCENT, C, F, R, soft } from './theme';
 
@@ -93,7 +95,7 @@ export function Btn({ label, onPress, kind = 'primary', size = 'md', icon, disab
         return [{
           flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: R.pill,
           borderWidth: 1, borderColor: kind === 'ghost' ? (pressed ? C.ink : C.line) : 'transparent', backgroundColor: bg,
-          opacity: disabled ? 0.55 : 1, flexGrow: grow ? 1 : 0, ...pad,
+          opacity: disabled ? 0.55 : 1, flexGrow: grow ? 1 : 0, transform: [{ scale: pressed ? 0.96 : 1 }], ...pad,
         }, style];
       }}>
       {busy ? <ActivityIndicator size="small" color={kind === 'ghost' || kind === 'danger' ? C.ink : C.bg} /> : null}
@@ -146,7 +148,7 @@ export function Card({ children, style, onPress, pad = 0 }: { children?: ReactNo
   const base: ViewStyle = { backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: R.card, padding: pad };
   if (!onPress) return <View style={[base, style]}>{children}</View>;
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [base, pressed && { borderColor: C.ink }, style]}>
+    <Pressable onPress={onPress} style={({ pressed }) => [base, pressed && { borderColor: C.ink, transform: [{ scale: 0.985 }] }, style]}>
       {children}
     </Pressable>
   );
@@ -392,18 +394,25 @@ export function Chip({ label, on, onPress, icon, count }: { label: string; on?: 
 }
 
 export function CheckBox({ checked, onChange, disabled, label }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean; label?: string }) {
+  const sc = useSharedValue(1);
+  const pop = useAnimatedStyle(() => ({ transform: [{ scale: sc.get() }] }));
   return (
     <Pressable
-      onPress={disabled ? undefined : () => { tap(checked ? 'light' : 'success'); onChange(!checked); }}
+      onPress={disabled ? undefined : () => {
+        tap(checked ? 'light' : 'success');
+        sc.set(withSequence(withTiming(0.7, { duration: 90 }), withSpring(1, { damping: 7, stiffness: 260 })));
+        onChange(!checked);
+      }}
       hitSlop={10}
       accessibilityRole="checkbox"
       accessibilityState={{ checked, disabled }}
-      accessibilityLabel={label}
-      style={{
+      accessibilityLabel={label}>
+      <Animated.View style={[{
         width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: checked ? C.ok : C.line,
         backgroundColor: checked ? C.ok : 'transparent', alignItems: 'center', justifyContent: 'center',
-      }}>
-      {checked ? <Icon name="check" size={15} color={C.surface} strokeWidth={2.6} /> : null}
+      }, pop]}>
+        {checked ? <Animated.View entering={ZoomIn.springify().damping(10)}><Icon name="check" size={15} color={C.surface} strokeWidth={2.6} /></Animated.View> : null}
+      </Animated.View>
     </Pressable>
   );
 }

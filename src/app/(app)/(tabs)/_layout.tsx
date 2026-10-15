@@ -1,57 +1,97 @@
 import { Tabs } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
+import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useData } from '@/data/DataProvider';
+import type { TabKey } from '@/lib/types';
 import { Icon } from '@/ui/Icon';
 import { tap, Txt } from '@/ui/kit';
-import { ACCENT, C, soft, type TabKey } from '@/ui/theme';
+import { ACCENT, C, soft } from '@/ui/theme';
 
-// As 6 abas da página, na barra de baixo como no celular.
-const META: Record<TabKey, { label: string; icon: string }> = {
-  casa: { label: 'Casa', icon: 'house' },
-  switch: { label: 'Switch 2', icon: 'switch' },
-  ape: { label: 'Apê', icon: 'building' },
-  mudanca: { label: 'Mudança', icon: 'truck' },
-  viagem: { label: 'Viagem', icon: 'suitcase' },
-  dinheiro: { label: 'Dinheiro', icon: 'wallet' },
-};
+// Barra de abas de baixo: uma pílula na cor da aba desliza até a aba tocada e o ícone dá um pulinho.
+// Abas escondidas nos ajustes do casal não aparecem.
+
+const SPRING = { damping: 18, stiffness: 190, mass: 0.8 };
 
 function TabBar({ state, navigation }: BottomTabBarProps) {
+  const d = useData();
   const insets = useSafeAreaInsets();
+  const routes = state.routes.filter(r => d.tabs[r.name as TabKey] && !d.tabs[r.name as TabKey].hidden);
+  const activeKey = state.routes[state.index]?.name as TabKey;
+  const activeIdx = Math.max(0, routes.findIndex(r => r.name === activeKey));
+  const [w, setW] = useState(0);
+  const tabW = routes.length ? w / routes.length : 0;
+  const accent = ACCENT[activeKey] || ACCENT.casa;
+
+  const x = useSharedValue(0);
+  const color = useSharedValue(soft(accent));
+  const placed = useSharedValue(false);
+  useEffect(() => {
+    if (!tabW) return;
+    if (!placed.get()) { x.set(activeIdx * tabW); placed.set(true); } else x.set(withSpring(activeIdx * tabW, SPRING));
+  }, [activeIdx, tabW, x, placed]);
+  useEffect(() => { color.set(withTiming(soft(accent), { duration: 260 })); }, [accent, color]);
+  const pill = useAnimatedStyle(() => ({ transform: [{ translateX: x.get() }], backgroundColor: color.get() }));
+
+  // Se a aba aberta foi escondida nos ajustes, vai para a primeira visível.
+  const hiddenNow = !!d.tabs[activeKey]?.hidden;
+  const first = routes[0]?.name;
+  useEffect(() => {
+    if (hiddenNow && first) navigation.navigate(first);
+  }, [hiddenNow, first, navigation]);
+
   return (
-    <View style={{ flexDirection: 'row', backgroundColor: 'rgba(255,250,248,0.97)', borderTopWidth: 1, borderTopColor: C.line, paddingTop: 6, paddingHorizontal: 6, paddingBottom: 8 + insets.bottom }}>
-      {state.routes.map((r, i) => {
-        const key = r.name as TabKey;
-        const meta = META[key];
-        if (!meta) return null;
-        const on = state.index === i;
-        const accent = ACCENT[key];
-        return (
-          <Pressable
-            key={r.key}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: on }}
-            accessibilityLabel={meta.label}
-            onPress={() => {
+    <View style={{
+      backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.line, paddingTop: 6, paddingHorizontal: 6, paddingBottom: 6 + insets.bottom,
+      shadowColor: '#2A2320', shadowOpacity: 0.06, shadowRadius: 12, shadowOffset: { width: 0, height: -4 }, elevation: 8,
+    }}>
+      <View onLayout={e => setW(e.nativeEvent.layout.width)} style={{ flexDirection: 'row' }}>
+        {tabW > 0 ? (
+          <Animated.View pointerEvents="none" style={[{ position: 'absolute', top: 2, bottom: 2, left: 3, width: tabW - 6, borderRadius: 16 }, pill]} />
+        ) : null}
+        {routes.map(r => {
+          const key = r.name as TabKey;
+          const info = d.tabs[key];
+          const on = key === activeKey;
+          return (
+            <TabButton key={r.key} on={on} label={info.label} icon={info.icon} accent={ACCENT[key]} onPress={() => {
               const ev = navigation.emit({ type: 'tabPress', target: r.key, canPreventDefault: true });
               if (!on && !ev.defaultPrevented) { tap(); navigation.navigate(r.name, r.params); }
-            }}
-            style={{ flex: 1, alignItems: 'center', gap: 3, paddingVertical: 4, minHeight: 54 }}>
-            <View style={{ width: 44, height: 30, borderRadius: 99, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? soft(accent) : 'transparent' }}>
-              <Icon name={meta.icon} size={22} color={on ? accent : C.muted} />
-            </View>
-            <Txt w="semibold" size={11} color={on ? C.ink : C.muted} lines={1}>{meta.label}</Txt>
-          </Pressable>
-        );
-      })}
+            }} />
+          );
+        })}
+      </View>
     </View>
+  );
+}
+
+function TabButton({ on, label, icon, accent, onPress }: { on: boolean; label: string; icon: string; accent: string; onPress: () => void }) {
+  const p = useSharedValue(on ? 1 : 0);
+  useEffect(() => { p.set(withSpring(on ? 1 : 0, { damping: 11, stiffness: 240 })); }, [on, p]);
+  const iconStyle = useAnimatedStyle(() => ({ transform: [{ translateY: -2.5 * p.get() }, { scale: 1 + 0.14 * p.get() }] }));
+  return (
+    <Pressable
+      accessibilityRole="tab"
+      accessibilityState={{ selected: on }}
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2, paddingTop: 9, paddingBottom: 7, minHeight: 56 }}>
+      <Animated.View style={iconStyle}>
+        <Icon name={icon} size={23} color={on ? accent : C.muted} strokeWidth={on ? 2 : 1.8} />
+      </Animated.View>
+      <Txt w={on ? 'semibold' : 'medium'} size={11} color={on ? C.ink : C.muted} lines={1}>{label}</Txt>
+    </Pressable>
   );
 }
 
 export default function TabsLayout() {
   return (
-    <Tabs tabBar={p => <TabBar {...p} />} screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: C.bg } }}>
+    <Tabs
+      tabBar={p => <TabBar {...p} />}
+      screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: C.bg }, animation: 'shift' }}>
       <Tabs.Screen name="casa" />
       <Tabs.Screen name="switch" />
       <Tabs.Screen name="ape" />

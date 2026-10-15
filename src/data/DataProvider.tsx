@@ -4,8 +4,9 @@ import { AppState } from 'react-native';
 import { favApt, secsOf } from '@/lib/calc';
 import { uuid } from '@/lib/format';
 import { friendlyError, supabase } from '@/lib/supabase';
+import { resolveTabs } from '@/lib/tabs';
 import {
-  TABLES, type DataTables, type Household, type Member, type RowOf, type ShopList, type TableName, type Who,
+  TABLES, type DataTables, type Household, type Member, type RowOf, type ShopList, type TableName, type TabKey, type Who,
 } from '@/lib/types';
 
 import { useSession } from './session';
@@ -60,6 +61,7 @@ function normalize<T>(row: T): T {
   for (const k of Object.keys(r)) if (NUMERIC.has(k) && typeof r[k] === 'string') r[k] = Number(r[k]);
   if ('options' in r && !Array.isArray(r.options)) r.options = [];
   if ('likes' in r && !Array.isArray(r.likes)) r.likes = [];
+  if ('tabs' in r && (!r.tabs || typeof r.tabs !== 'object' || Array.isArray(r.tabs))) r.tabs = {};
   return r as T;
 }
 
@@ -108,7 +110,7 @@ interface DataCtx {
   insert: <T extends TableName>(table: T, row: Partial<RowOf<T>>) => Promise<RowOf<T>>;
   update: <T extends TableName>(table: T, id: string, patch: Partial<RowOf<T>>) => Promise<void>;
   remove: (table: TableName, id: string) => Promise<void>;
-  updateHousehold: (patch: Partial<Pick<Household, 'name' | 'name_a' | 'name_b' | 'renda' | 'budget_casa' | 'budget_switch'>>) => Promise<void>;
+  updateHousehold: (patch: Partial<Pick<Household, 'name' | 'name_a' | 'name_b' | 'renda' | 'budget_casa' | 'budget_switch' | 'photo' | 'tabs'>>) => Promise<void>;
   updateMyName: (name: string) => Promise<void>;
   regenerateInvite: () => Promise<string>;
   reload: () => Promise<void>;
@@ -318,9 +320,11 @@ export function useData() {
     const goalDeps = (goalId: string) => t.goal_deposits.filter(x => x.goal_id === goalId);
     const renda = Number(household?.renda) || 0;
     const listBudget = (list: ShopList) => Number(list === 'casa' ? household?.budget_casa : household?.budget_switch) || 0;
+    const tabs = resolveTabs(household);
+    const tabLabel = (k: TabKey) => tabs[k].label;
     return {
       ...state, me: c.me, nm, whoLabel, memberName, secs, secById, itemsOf, listItems, listOfItem,
-      costsOf, depsOf, packOf, goalDeps, renda, listBudget, fav: favApt(t.apartments),
+      costsOf, depsOf, packOf, goalDeps, renda, listBudget, fav: favApt(t.apartments), tabs, tabLabel,
     };
   }, [state, c.me]);
 }

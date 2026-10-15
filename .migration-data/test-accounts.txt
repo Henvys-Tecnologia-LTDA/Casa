@@ -1,5 +1,0 @@
-﻿# Contas de teste temporárias (apagar depois dos testes)
-teste.a@casa.test
-teste.b@casa.test
-teste.c@casa.test
-senha: 4cDCa7Skpjnuus

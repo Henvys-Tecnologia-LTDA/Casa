@@ -1,7 +1,9 @@
 import { useMemo, useState, type ReactNode } from 'react';
+import { View } from 'react-native';
 
 import { AptSheet } from './ape/AptSheet';
 import { DepositSheet, GoalSheet } from './money/GoalSheets';
+import { TabSheet } from './settings/TabSheet';
 import { SheetsCtx, type SheetsApi, type SheetState } from './sheetsCtx';
 import { BuySheet } from './shop/BuySheet';
 import { ItemDetailSheet } from './shop/ItemDetailSheet';
@@ -19,6 +21,7 @@ export function SheetsHost({ children }: { children: ReactNode }) {
   const close = api.close;
   return (
     <SheetsCtx.Provider value={api}>
+      <View style={{ flex: 1 }}>
       {children}
       {s?.kind === 'detail' ? <ItemDetailSheet key={s.key} id={s.id} onClose={close} /> : null}
       {s?.kind === 'item' ? <ItemEditorSheet key={s.key} item={s.item} secId={s.secId} list={s.list} onClose={close} /> : null}
@@ -30,6 +33,8 @@ export function SheetsHost({ children }: { children: ReactNode }) {
       {s?.kind === 'cost' ? <CostSheet key={s.key} tripId={s.tripId} cost={s.cost} onClose={close} /> : null}
       {s?.kind === 'goal' ? <GoalSheet key={s.key} goal={s.goal} onClose={close} /> : null}
       {s?.kind === 'deposit' ? <DepositSheet key={s.key} goalId={s.goalId} onClose={close} /> : null}
+      {s?.kind === 'tab' ? <TabSheet key={s.key} tab={s.tab} onClose={close} /> : null}
+      </View>
     </SheetsCtx.Provider>
   );
 }

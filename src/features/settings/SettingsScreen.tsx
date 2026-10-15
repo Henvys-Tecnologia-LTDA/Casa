@@ -1,18 +1,23 @@
 import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Platform, Share, View } from 'react-native';
+import { Platform, Pressable, Share, View } from 'react-native';
 
 import { useActions, useData } from '@/data/DataProvider';
 import { useSession } from '@/data/session';
 import { fmtInput, parsePrice } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
+import { TAB_HINT, TAB_ORDER } from '@/lib/tabs';
 import { MoneyField } from '@/ui/fields';
-import { Btn, Chip, ErrText, Field, Grid2, Hint, Muted, Panel, Serif, Txt } from '@/ui/kit';
-import { BackBar, Screen } from '@/ui/Screen';
+import { Icon } from '@/ui/Icon';
+import { Btn, Chip, ErrText, Field, Grid2, Hint, Muted, Panel, Pill, Serif, Txt } from '@/ui/kit';
+import { deletePhotos, pickImage, uploadPhoto } from '@/ui/Photo';
+import { BackBar, CoupleAvatar, Screen } from '@/ui/Screen';
 import { useConfirm } from '@/ui/Sheet';
-import { C, F } from '@/ui/theme';
+import { ACCENT, C, F, soft } from '@/ui/theme';
 import { useToast } from '@/ui/Toast';
+
+import { useSheets } from '../sheetsCtx';
 
 // Ajustes do casal (nomes, renda, tetos) + convite, membros, trocar de casal e sair.
 export function SettingsScreen() {
@@ -33,6 +38,8 @@ export function SettingsScreen() {
   const [myName, setMyName] = useState(myRow?.display_name || '');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const sheets = useSheets();
 
   async function save() {
     const nums = [renda, budCasa, budSwitch].map(v => (v.trim() ? parsePrice(v) : 0));
@@ -48,6 +55,23 @@ export function SettingsScreen() {
       refreshMemberships();
       toast('Ajustes salvos');
     } catch (e: any) { setErr(e?.message || 'Não foi possível salvar.'); } finally { setBusy(false); }
+  }
+
+  async function changePhoto(source: 'library' | 'camera') {
+    try {
+      const img = await pickImage(source);
+      if (!img) return;
+      setPhotoBusy(true);
+      const old = h?.photo;
+      const path = await uploadPhoto(hid, img);
+      await updateHousehold({ photo: path });
+      if (old) deletePhotos([old]);
+      toast('Foto do casal atualizada', 'heart');
+    } catch (e: any) { toast(e?.message || 'Não foi possível trocar a foto.', 'x'); } finally { setPhotoBusy(false); }
+  }
+  async function removePhoto() {
+    const old = h?.photo;
+    try { await updateHousehold({ photo: '' }); if (old) deletePhotos([old]); } catch (e: any) { toast(e?.message || 'Erro', 'x'); }
   }
 
   const code = h?.invite_code || '';
@@ -72,6 +96,43 @@ export function SettingsScreen() {
       <BackBar label="Voltar" />
       <Serif size={34}>Ajustes do casal</Serif>
 
+      <Panel title="Foto do casal" icon="camera">
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+          <CoupleAvatar size={92} />
+          <View style={{ flex: 1, gap: 8 }}>
+            <Muted size={13.5}>Aparece no topo de todas as abas, nos dois celulares.</Muted>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              <Btn label="Galeria" kind="ghost" size="sm" icon="image" busy={photoBusy} onPress={() => changePhoto('library')} />
+              {Platform.OS !== 'web' ? <Btn label="Câmera" kind="ghost" size="sm" icon="camera" onPress={() => changePhoto('camera')} /> : null}
+              {h?.photo ? <Btn label="Remover" kind="danger" size="sm" onPress={removePhoto} /> : null}
+            </View>
+          </View>
+        </View>
+      </Panel>
+
+      <Panel title="Abas" icon="sliders">
+        <Hint>Renomeiem, troquem o ícone ou escondam as abas que vocês não usam.</Hint>
+        <View style={{ borderWidth: 1, borderColor: C.line, borderRadius: 3, overflow: 'hidden' }}>
+          {TAB_ORDER.map((k, i) => {
+            const t = d.tabs[k];
+            return (
+              <Pressable key={k} onPress={() => sheets.open({ kind: 'tab', tab: k })}
+                style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderTopWidth: i ? 1 : 0, borderTopColor: C.line, backgroundColor: pressed ? C.bg : C.surface })}>
+                <View style={{ width: 38, height: 38, borderRadius: 8, backgroundColor: soft(ACCENT[k]), alignItems: 'center', justifyContent: 'center', opacity: t.hidden ? 0.5 : 1 }}>
+                  <Icon name={t.icon} size={20} color={ACCENT[k]} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Txt w="semibold" color={t.hidden ? C.muted : C.ink}>{t.label}</Txt>
+                  <Muted size={12.5}>{TAB_HINT[k]}</Muted>
+                </View>
+                {t.hidden ? <Pill label="Escondida" kind="baixa" /> : null}
+                <Icon name="pencil" size={16} color={C.muted} />
+              </Pressable>
+            );
+          })}
+        </View>
+      </Panel>
+
       <Panel title="Nomes" icon="users">
         <Field label="Nome do casal (aparece na lista de casais)" value={coupleName} onChangeText={setCoupleName} placeholder="Ex.: Camila e Luis" />
         <Grid2>
@@ -86,7 +147,7 @@ export function SettingsScreen() {
           hint="Serve para calcular quanto da renda a parcela do apê compromete. Os bancos costumam aceitar até 30%." />
         <Grid2>
           <MoneyField label="Teto de gastos da Casa (R$)" value={budCasa} onChange={setBudCasa} placeholder="Ex.: 45.000" />
-          <MoneyField label="Teto de gastos do Switch 2 (R$)" value={budSwitch} onChange={setBudSwitch} placeholder="Ex.: 3.000" />
+          <MoneyField label={`Teto de gastos de ${d.tabLabel('switch')} (R$)`} value={budSwitch} onChange={setBudSwitch} placeholder="Ex.: 3.000" />
         </Grid2>
         <ErrText msg={err} />
         <View style={{ alignSelf: 'flex-start' }}><Btn label="Salvar ajustes" onPress={save} busy={busy} /></View>
@@ -122,7 +183,7 @@ export function SettingsScreen() {
             <Chip key={m.household_id} label={m.name} on={m.household_id === hid} onPress={() => {
               if (m.household_id === hid) return;
               setCurrentId(m.household_id);
-              router.replace('/casa');
+              router.replace('/');
             }} />
           ))}
         </View>

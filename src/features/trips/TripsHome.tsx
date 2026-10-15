@@ -8,7 +8,7 @@ import type { Trip } from '@/lib/types';
 import { Icon } from '@/ui/Icon';
 import { Btn, Empty, Label, Meter, Muted, Pill, Summary, Txt, useAccent, ViewHead } from '@/ui/kit';
 import { Photo } from '@/ui/Photo';
-import { AppHeader, Loading, Screen } from '@/ui/Screen';
+import { AppHeader, Appear, Loading, Screen } from '@/ui/Screen';
 import { C, R, soft } from '@/ui/theme';
 
 import { Badge } from '../ape/ApeHome';
@@ -30,7 +30,7 @@ export function TripsHome() {
               action={<Btn label="Adicionar viagem" icon="plus" onPress={() => sheets.open({ kind: 'trip', trip: null })} />} />
           ) : (
             <View style={{ gap: 12 }}>
-              {list.map(t => <TripCard key={t.id} t={t} />)}
+              {list.map((t, k) => <Appear key={t.id} i={k}><TripCard t={t} /></Appear>)}
               <Pressable onPress={() => sheets.open({ kind: 'trip', trip: null })}
                 style={({ pressed }) => ({ borderWidth: 1, borderStyle: 'dashed', borderColor: pressed ? C.ink : C.line, borderRadius: R.card, padding: 20, alignItems: 'center', gap: 8 })}>
                 <Icon name="plus" color={C.muted} />

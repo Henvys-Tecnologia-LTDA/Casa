@@ -26,7 +26,9 @@ export const C = {
   axis: '#D3C2BD',
 };
 
-export type TabKey = 'casa' | 'switch' | 'ape' | 'mudanca' | 'viagem' | 'dinheiro';
+import type { TabKey } from '@/lib/types';
+
+export type { TabKey };
 
 export const ACCENT: Record<TabKey, string> = {
   casa: '#D9473F',

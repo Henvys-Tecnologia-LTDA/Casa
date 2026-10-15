@@ -8,7 +8,7 @@ import type { Apartment } from '@/lib/types';
 import { Icon } from '@/ui/Icon';
 import { Btn, Empty, Label, Muted, Note, Pill, Summary, Txt, useAccent, ViewHead } from '@/ui/kit';
 import { Photo } from '@/ui/Photo';
-import { AppHeader, Loading, Screen } from '@/ui/Screen';
+import { AppHeader, Appear, Loading, Screen } from '@/ui/Screen';
 import { C, F, R, soft } from '@/ui/theme';
 
 import { useSheets } from '../sheetsCtx';
@@ -38,7 +38,7 @@ export function ApeHome() {
               action={<Btn label="Adicionar apartamento" icon="plus" onPress={() => sheets.open({ kind: 'apt', apt: null })} />} />
           ) : (
             <View style={{ gap: 12 }}>
-              {list.map(a => <AptCard key={a.id} a={a} />)}
+              {list.map((a, k) => <Appear key={a.id} i={k}><AptCard a={a} /></Appear>)}
               <Pressable onPress={() => sheets.open({ kind: 'apt', apt: null })}
                 style={({ pressed }) => ({ borderWidth: 1, borderStyle: 'dashed', borderColor: pressed ? C.ink : C.line, borderRadius: R.card, padding: 20, alignItems: 'center', gap: 8 })}>
                 <Icon name="plus" color={C.muted} />

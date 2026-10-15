@@ -7,6 +7,7 @@ import type { Item } from '@/lib/types';
 import { Icon } from '@/ui/Icon';
 import { CheckBox, Muted, Pill, Tag, Txt, useAccent } from '@/ui/kit';
 import { Photo } from '@/ui/Photo';
+import { Appear } from '@/ui/Screen';
 import { C } from '@/ui/theme';
 
 import { useSheets } from '../sheetsCtx';
@@ -73,7 +74,7 @@ export function ItemRow({ item, showSection, first }: { item: Item; showSection?
 export function ItemList({ items, showSection }: { items: Item[]; showSection?: boolean }) {
   return (
     <View style={{ backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 3, overflow: 'hidden' }}>
-      {items.map((i, k) => <ItemRow key={i.id} item={i} showSection={showSection} first={k === 0} />)}
+      {items.map((i, k) => <Appear key={i.id} i={k}><ItemRow item={i} showSection={showSection} first={k === 0} /></Appear>)}
     </View>
   );
 }

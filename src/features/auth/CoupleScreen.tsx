@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useSession } from '@/data/session';
@@ -53,8 +54,8 @@ export function CoupleScreen({ another }: { another?: boolean }) {
   }
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: C.bg }}>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 16, paddingTop: insets.top + 18, paddingBottom: insets.bottom + 40, gap: 18, maxWidth: 560, width: '100%', alignSelf: 'center' }}>
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <KeyboardAwareScrollView bottomOffset={30} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 16, paddingTop: insets.top + 18, paddingBottom: insets.bottom + 40, gap: 18, maxWidth: 560, width: '100%', alignSelf: 'center' }}>
         {another && memberships.length ? <BackBar label="Voltar" /> : null}
         <View style={{ gap: 4 }}>
           <Txt w="medium" size={11.5} color={C.coral} upper track={3.2}>Planejamento a dois</Txt>
@@ -82,7 +83,7 @@ export function CoupleScreen({ another }: { another?: boolean }) {
         <View style={{ alignSelf: 'center' }}>
           <Btn label="Sair da conta" kind="ghost" size="sm" icon="logout" onPress={async () => { await signOut(); router.replace('/login'); }} />
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
+    </View>
   );
 }

@@ -10,7 +10,7 @@ import { Icon } from '@/ui/Icon';
 import {
   Btn, Card, Dot, DuoBar, Empty, Label, Meter, Muted, Panel, Serif, Summary, Txt, useAccent, ViewHead, type StatCell,
 } from '@/ui/kit';
-import { AppHeader, Loading, Screen } from '@/ui/Screen';
+import { AppHeader, Appear, Loading, Screen } from '@/ui/Screen';
 import { C, F, R, soft } from '@/ui/theme';
 
 import { useSheets } from '../sheetsCtx';
@@ -33,26 +33,28 @@ export function ShopHome({ list }: { list: ShopList }) {
     <Screen tab={list} onFab={d.ready ? onFab : undefined} fabLabel="Novo item">
       <AppHeader />
       <ShopSummary list={list} />
-      <SearchBar value={q} onChange={setQ} placeholder={`Buscar em ${T.label}…`} />
+      <SearchBar value={q} onChange={setQ} placeholder={`Buscar em ${d.tabLabel(list)}…`} />
       {!d.ready ? <Loading /> : q.trim() ? <SearchResults list={list} q={q.trim()} /> : (
         <>
           <ViewHead title={T.Units} sub={secs.length ? `Toque em um ${T.unit} para abrir a lista.` : undefined} />
           {!secs.length ? (
             <Empty
-              icon={T.icon}
-              title={`A lista ${T.label} está vazia`}
+              icon={d.tabs[list].icon}
+              title={`A lista ${d.tabLabel(list)} está vazia`}
               text={`Crie o primeiro ${T.unit} e comece a adicionar itens com foto, preço e loja.`}
               action={<Btn label={T.novo} icon="plus" onPress={() => sheets.open({ kind: 'section', list, sec: null })} />}
             />
           ) : (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-              {secs.map(s => <RoomCard key={s.id} sec={s} items={d.itemsOf(s.id)} />)}
-              <Pressable
-                onPress={() => sheets.open({ kind: 'section', list, sec: null })}
-                style={({ pressed }) => [roomBox, { borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 130, backgroundColor: 'transparent', borderColor: pressed ? C.ink : C.line }]}>
-                <Icon name="plus" color={C.muted} />
-                <Txt w="semibold" color={C.muted}>{T.novo}</Txt>
-              </Pressable>
+              {secs.map((s, k) => <RoomCard key={s.id} sec={s} items={d.itemsOf(s.id)} i={k} />)}
+              <Appear i={secs.length} style={{ width: '48.5%' }}>
+                <Pressable
+                  onPress={() => sheets.open({ kind: 'section', list, sec: null })}
+                  style={({ pressed }) => [roomBox, { width: '100%', flexGrow: 1, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 130, backgroundColor: 'transparent', borderColor: pressed ? C.ink : C.line, transform: [{ scale: pressed ? 0.97 : 1 }] }]}>
+                  <Icon name="plus" color={C.muted} />
+                  <Txt w="semibold" color={C.muted}>{T.novo}</Txt>
+                </Pressable>
+              </Appear>
             </View>
           )}
           {secs.length ? (
@@ -119,28 +121,30 @@ export function SearchBar({ value, onChange, placeholder }: { value: string; onC
 
 function SearchResults({ list, q }: { list: ShopList; q: string }) {
   const d = useData();
-  const T = TABS[list];
+  const label = d.tabLabel(list);
   const nq = norm(q);
   const res = d.listItems(list)
     .filter(i => norm([i.name, i.notes, i.store, d.secById(i.section_id)?.name, ...optsOf(i).map(o => `${o.name} ${o.store}`)].join(' ')).includes(nq))
     .sort((a, b) => Number(a.bought) - Number(b.bought) || byPrio(a, b));
   return (
     <>
-      <ViewHead title={`Resultados para “${q}”`} sub={`${plural(res.length, 'item', 'itens')} em ${T.label}`} />
+      <ViewHead title={`Resultados para “${q}”`} sub={`${plural(res.length, 'item', 'itens')} em ${label}`} />
       {res.length ? <ItemList items={res} showSection /> : (
-        <Empty icon="search" title="Nada encontrado" text={`Nenhum item de ${T.label} tem “${q}” no nome, na loja ou nas observações.`} />
+        <Empty icon="search" title="Nada encontrado" text={`Nenhum item de ${label} tem “${q}” no nome, na loja ou nas observações.`} />
       )}
     </>
   );
 }
 
-function RoomCard({ sec, items }: { sec: Section; items: Item[] }) {
+function RoomCard({ sec, items, i }: { sec: Section; items: Item[]; i: number }) {
   const accent = useAccent();
   const st = stats(items);
   const full = st.count > 0 && st.nb === st.count;
   const bs = budgetState(st.projected, Number(sec.budget) || 0);
   return (
-    <Pressable onPress={() => router.push({ pathname: '/section/[id]', params: { id: sec.id } })} style={({ pressed }) => [roomBox, pressed && { borderColor: C.ink }]}>
+    <Appear i={i} style={{ width: '48.5%' }}>
+    <Pressable onPress={() => router.push({ pathname: '/section/[id]', params: { id: sec.id } })}
+      style={({ pressed }) => [roomBox, { width: '100%', flexGrow: 1 }, pressed && { borderColor: C.ink, transform: [{ scale: 0.97 }] }]}>
       <View style={{ width: 40, height: 40, borderRadius: R.icon, backgroundColor: soft(accent), alignItems: 'center', justifyContent: 'center', marginBottom: 6 }}>
         <Icon name={sec.icon || 'box'} size={22} color={accent} />
       </View>
@@ -158,6 +162,7 @@ function RoomCard({ sec, items }: { sec: Section; items: Item[] }) {
         </View>
       ) : null}
     </Pressable>
+    </Appear>
   );
 }
 

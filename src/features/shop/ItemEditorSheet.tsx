@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { useActions, useData } from '@/data/DataProvider';
-import { effective, hasPaid, optsOf, PARCELAS, qtyOf, SHOP, TABS } from '@/lib/calc';
+import { effective, hasPaid, optsOf, PARCELAS, qtyOf, SHOP } from '@/lib/calc';
 import { fmtInput, inputToYm, money, nextYm, normLink, parsePrice, rid, ymToInput } from '@/lib/format';
 import type { Item, ItemOption, Phase, Priority, ShopList, Who } from '@/lib/types';
 import { MoneyField, MonthField, IntField } from '@/ui/fields';
@@ -147,7 +147,7 @@ export function ItemEditorSheet({ item, secId, list, onClose }: { item: Item | n
             if (!ss.length) return null;
             return (
               <View key={l} style={{ gap: 6 }}>
-                <Muted size={12}>{TABS[l].label}</Muted>
+                <Muted size={12}>{d.tabLabel(l)}</Muted>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
                   {ss.map(s => <Chip key={s.id} label={s.name} icon={s.icon} on={sec === s.id} onPress={() => setSec(s.id)} />)}
                 </View>

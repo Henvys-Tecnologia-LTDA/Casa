@@ -7,6 +7,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { SessionProvider } from '@/data/session';
@@ -28,14 +29,16 @@ export default function RootLayout() {
   if (!ready) return null;
   return (
     <SafeAreaProvider>
-      <SessionProvider>
-        <ToastProvider>
-          <ConfirmProvider>
-            <StatusBar style="dark" />
-            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg } }} />
-          </ConfirmProvider>
-        </ToastProvider>
-      </SessionProvider>
+      <KeyboardProvider>
+        <SessionProvider>
+          <ToastProvider>
+            <ConfirmProvider>
+              <StatusBar style="dark" />
+              <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg }, animation: 'fade' }} />
+            </ConfirmProvider>
+          </ToastProvider>
+        </SessionProvider>
+      </KeyboardProvider>
     </SafeAreaProvider>
   );
 }

@@ -5,10 +5,15 @@ export type ShopList = 'casa' | 'switch';
 export type Phase = '' | 'antes' | 'mes1' | 'calma';
 export type Priority = 'alta' | 'media' | 'baixa';
 
+export type TabKey = 'casa' | 'switch' | 'ape' | 'mudanca' | 'viagem' | 'dinheiro';
+export interface TabCfg { label?: string; icon?: string; hidden?: boolean }
+
 export interface Household {
   id: string;
   name: string;
   invite_code: string;
+  photo: string;
+  tabs: Partial<Record<TabKey, TabCfg>>;
   name_a: string;
   name_b: string;
   renda: number;
