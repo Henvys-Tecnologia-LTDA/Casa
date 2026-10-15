@@ -1,11 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { BackHandler, Pressable, StyleSheet, View } from 'react-native';
 import { KeyboardAwareScrollView, useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller';
-import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown, ZoomIn, ZoomOut, useAnimatedStyle } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from './Icon';
 import { Btn, IconBtn, Muted, Serif, Txt } from './kit';
+import { backdropIn, backdropOut, dialogIn, dialogOut, sheetIn, sheetOut } from './motion';
 import { C } from './theme';
 
 // Janelas que sobem de baixo (bottom sheets). Ficam numa camada dentro do app (não em Modal nativo):
@@ -40,11 +41,11 @@ function SheetBody({ onClose, title, children, footer, media, live }: {
   const footH = footer ? 74 : 0;
   return (
     <View style={[StyleSheet.absoluteFill, s.layer]} pointerEvents="box-none">
-      <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(180)} style={[StyleSheet.absoluteFill, s.backdrop]}>
+      <Animated.View entering={backdropIn} exiting={backdropOut} style={[StyleSheet.absoluteFill, s.backdrop]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Fechar" />
       </Animated.View>
       <Animated.View style={[s.wrap, { top: insets.top + 10 }, lift]} pointerEvents="box-none">
-        <Animated.View entering={SlideInDown.springify().damping(20).stiffness(190).mass(0.9)} exiting={SlideOutDown.duration(200)} style={s.sheet}>
+        <Animated.View entering={sheetIn} exiting={sheetOut} style={s.sheet}>
           <View style={s.grab} />
           {media}
           {title ? (
@@ -125,10 +126,10 @@ function ConfirmBox({ opts, done }: { opts: ConfirmOpts; done: (v: boolean) => v
   useBackToClose(() => done(false));
   return (
     <View style={[StyleSheet.absoluteFill, s.layer, { zIndex: 1100, elevation: 1100, justifyContent: 'center', padding: 24 }]}>
-      <Animated.View entering={FadeIn.duration(160)} exiting={FadeOut.duration(140)} style={[StyleSheet.absoluteFill, s.backdrop]}>
+      <Animated.View entering={backdropIn} exiting={backdropOut} style={[StyleSheet.absoluteFill, s.backdrop]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={() => done(false)} />
       </Animated.View>
-      <Animated.View entering={ZoomIn.springify().damping(16)} exiting={ZoomOut.duration(140)}
+      <Animated.View entering={dialogIn} exiting={dialogOut}
         style={{ backgroundColor: C.surface, borderRadius: 8, padding: 22, gap: 10, alignItems: 'center', maxWidth: 420, width: '100%', alignSelf: 'center', elevation: 20 }}>
         <View style={{ width: 54, height: 54, borderRadius: 27, backgroundColor: C.hiSoft, alignItems: 'center', justifyContent: 'center' }}>
           <Icon name="trash" size={26} color={C.hi} />

@@ -2,13 +2,14 @@ import { router } from 'expo-router';
 import { Children, useState, type ReactNode } from 'react';
 import { Pressable, RefreshControl, Text, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useActions, useData } from '@/data/DataProvider';
 
 import { Icon } from './Icon';
 import { AccentCtx, IconBtn, tap, Txt } from './kit';
+import { fabIn, sectionIn } from './motion';
 import { Photo } from './Photo';
 import { ACCENT, C, F, R, soft, type TabKey } from './theme';
 
@@ -17,7 +18,7 @@ import { ACCENT, C, F, R, soft, type TabKey } from './theme';
 
 export function Appear({ i = 0, children, style }: { i?: number; children?: ReactNode; style?: object }) {
   return (
-    <Animated.View entering={FadeInDown.duration(420).delay(Math.min(i, 8) * 55).springify().damping(18)} style={style}>
+    <Animated.View entering={sectionIn(i)} style={style}>
       {children}
     </Animated.View>
   );
@@ -59,14 +60,14 @@ export function Screen({ tab, children, onFab, fabLabel, inTabs = true }: {
 
 function Fab({ accent, label, onPress, bottom }: { accent: string; label?: string; onPress: () => void; bottom: number }) {
   return (
-    <Animated.View entering={FadeInDown.delay(250).springify().damping(14)} style={{ position: 'absolute', right: 16, bottom }}>
+    <Animated.View entering={fabIn} style={{ position: 'absolute', right: 16, bottom }}>
       <Pressable
         onPress={() => { tap(); onPress(); }}
         accessibilityRole="button"
         accessibilityLabel={label || 'Adicionar'}
         style={({ pressed }) => ({
           width: 58, height: 58, borderRadius: R.pill, backgroundColor: accent, alignItems: 'center', justifyContent: 'center',
-          transform: [{ scale: pressed ? 0.9 : 1 }, { rotate: pressed ? '90deg' : '0deg' }],
+          transform: [{ scale: pressed ? 0.94 : 1 }],
           shadowColor: accent, shadowOpacity: 0.45, shadowRadius: 13, shadowOffset: { width: 0, height: 10 }, elevation: 6,
         })}>
         <Icon name="plus" size={26} color="#FFFFFF" strokeWidth={2.2} />

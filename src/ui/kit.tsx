@@ -5,9 +5,10 @@ import {
   type KeyboardTypeOptions, type StyleProp, type TextStyle, type ViewStyle,
 } from 'react-native';
 
-import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming, ZoomIn } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 
 import { Icon } from './Icon';
+import { checkIn, DUR, ease } from './motion';
 import { ACCENT, C, F, R, soft } from './theme';
 
 /* ---------- cor de destaque da aba ---------- */
@@ -400,7 +401,7 @@ export function CheckBox({ checked, onChange, disabled, label }: { checked: bool
     <Pressable
       onPress={disabled ? undefined : () => {
         tap(checked ? 'light' : 'success');
-        sc.set(withSequence(withTiming(0.7, { duration: 90 }), withSpring(1, { damping: 7, stiffness: 260 })));
+        sc.set(withSequence(withTiming(0.86, { duration: 70 }), withTiming(1, ease(DUR.fast))));
         onChange(!checked);
       }}
       hitSlop={10}
@@ -411,7 +412,7 @@ export function CheckBox({ checked, onChange, disabled, label }: { checked: bool
         width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: checked ? C.ok : C.line,
         backgroundColor: checked ? C.ok : 'transparent', alignItems: 'center', justifyContent: 'center',
       }, pop]}>
-        {checked ? <Animated.View entering={ZoomIn.springify().damping(10)}><Icon name="check" size={15} color={C.surface} strokeWidth={2.6} /></Animated.View> : null}
+        {checked ? <Animated.View entering={checkIn}><Icon name="check" size={15} color={C.surface} strokeWidth={2.6} /></Animated.View> : null}
       </Animated.View>
     </Pressable>
   );

@@ -2,19 +2,18 @@ import { Tabs } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useData } from '@/data/DataProvider';
 import type { TabKey } from '@/lib/types';
 import { Icon } from '@/ui/Icon';
 import { tap, Txt } from '@/ui/kit';
+import { DUR, ease } from '@/ui/motion';
 import { ACCENT, C, soft } from '@/ui/theme';
 
-// Barra de abas de baixo: uma pílula na cor da aba desliza até a aba tocada e o ícone dá um pulinho.
+// Barra de abas de baixo: uma pílula na cor da aba desliza até a aba tocada e o ícone sobe um pouco.
 // Abas escondidas nos ajustes do casal não aparecem.
-
-const SPRING = { damping: 18, stiffness: 190, mass: 0.8 };
 
 function TabBar({ state, navigation }: BottomTabBarProps) {
   const d = useData();
@@ -31,9 +30,9 @@ function TabBar({ state, navigation }: BottomTabBarProps) {
   const placed = useSharedValue(false);
   useEffect(() => {
     if (!tabW) return;
-    if (!placed.get()) { x.set(activeIdx * tabW); placed.set(true); } else x.set(withSpring(activeIdx * tabW, SPRING));
+    if (!placed.get()) { x.set(activeIdx * tabW); placed.set(true); } else x.set(withTiming(activeIdx * tabW, ease(DUR.slow)));
   }, [activeIdx, tabW, x, placed]);
-  useEffect(() => { color.set(withTiming(soft(accent), { duration: 260 })); }, [accent, color]);
+  useEffect(() => { color.set(withTiming(soft(accent), ease(DUR.slow))); }, [accent, color]);
   const pill = useAnimatedStyle(() => ({ transform: [{ translateX: x.get() }], backgroundColor: color.get() }));
 
   // Se a aba aberta foi escondida nos ajustes, vai para a primeira visível.
@@ -70,8 +69,8 @@ function TabBar({ state, navigation }: BottomTabBarProps) {
 
 function TabButton({ on, label, icon, accent, onPress }: { on: boolean; label: string; icon: string; accent: string; onPress: () => void }) {
   const p = useSharedValue(on ? 1 : 0);
-  useEffect(() => { p.set(withSpring(on ? 1 : 0, { damping: 11, stiffness: 240 })); }, [on, p]);
-  const iconStyle = useAnimatedStyle(() => ({ transform: [{ translateY: -2.5 * p.get() }, { scale: 1 + 0.14 * p.get() }] }));
+  useEffect(() => { p.set(withTiming(on ? 1 : 0, ease())); }, [on, p]);
+  const iconStyle = useAnimatedStyle(() => ({ transform: [{ translateY: -2 * p.get() }, { scale: 1 + 0.06 * p.get() }] }));
   return (
     <Pressable
       accessibilityRole="tab"
