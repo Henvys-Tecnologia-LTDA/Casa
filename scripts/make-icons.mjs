@@ -1,8 +1,10 @@
-// Gera o ícone, o adaptive icon do Android, a splash e o favicon a partir de assets/brand/marca.svg.
+// Gera o ícone, o adaptive icon do Android, a splash, o favicon e os ícones de instalação da web
+// (public/) a partir de assets/brand/marca.svg.
 // O sharp não é dependência do app; instale só para rodar:
 //   npm i --no-save sharp && node scripts/make-icons.mjs
-import { readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
@@ -16,8 +18,13 @@ try {
 
 const BG = '#FBF1EF';
 const INK = '#2A2320';
-const marca = readFileSync(new URL('../assets/brand/marca.svg', import.meta.url), 'utf8').replace(/<!--[\s\S]*?-->/g, '');
-const out = name => fileURLToPath(new URL(`../assets/images/${name}`, import.meta.url));
+const marca = readFileSync(new URL('../assets/brand/marca.svg', import.meta.url), 'utf8')
+  .replace(/<!--[\s\S]*?-->/g, '').replace(/\n\s*\n/g, '\n');
+const out = file => {
+  const p = fileURLToPath(new URL(`../${file}`, import.meta.url));
+  mkdirSync(dirname(p), { recursive: true });
+  return p;
+};
 
 // A marca (traço incluso) ocupa ~85% da caixa 24x24 e cabe num círculo de 95% da meia caixa.
 // box: lado da caixa em fração da imagem · color: pinta tudo de uma cor · stroke: traço mais grosso
@@ -34,20 +41,30 @@ function svg(size, { box, color, stroke, tile, radius = 0 }) {
 
 const ASSETS = [
   // iOS e Android antigo: quadrado cheio, sem transparência (a loja da Apple recusa alfa).
-  { name: 'icon.png', size: 1024, box: 0.72, tile: true, opaque: true },
+  { file: 'assets/images/icon.png', size: 1024, box: 0.72, tile: true, opaque: true },
   // Adaptive icon: o fundo vem de android.adaptiveIcon.backgroundColor; a marca fica dentro do
   // círculo seguro (66 de 108 dp), com folga para qualquer máscara do launcher.
-  { name: 'android-icon-foreground.png', size: 1024, box: 0.54 },
-  { name: 'android-icon-monochrome.png', size: 1024, box: 0.54, color: INK },
+  { file: 'assets/images/android-icon-foreground.png', size: 1024, box: 0.54 },
+  { file: 'assets/images/android-icon-monochrome.png', size: 1024, box: 0.54, color: INK },
   // Splash: fundo vem do plugin expo-splash-screen; a imagem é exibida com imageWidth.
-  { name: 'splash-icon.png', size: 1024, box: 1 },
+  { file: 'assets/images/splash-icon.png', size: 1024, box: 1 },
   // Favicon: com fundo, para não sumir em aba escura; traço mais grosso para 16–48 px.
-  { name: 'favicon.png', size: 48, box: 0.86, stroke: 2, tile: true, radius: 0.22 },
+  { file: 'assets/images/favicon.png', size: 48, box: 0.86, stroke: 2, tile: true, radius: 0.22 },
+  // Web instalada (public/manifest.json e public/index.html). O iPhone arredonda o ícone sozinho.
+  { file: 'public/apple-touch-icon.png', size: 180, box: 0.72, tile: true, opaque: true },
+  { file: 'public/icon-192.png', size: 192, box: 0.78, tile: true, radius: 0.22 },
+  { file: 'public/icon-512.png', size: 512, box: 0.78, tile: true, radius: 0.22 },
+  // Maskable: o launcher recorta como quiser; a marca fica dentro do círculo seguro de 80%.
+  { file: 'public/icon-maskable-512.png', size: 512, box: 0.6, tile: true, opaque: true },
 ];
 
 for (const a of ASSETS) {
   let img = sharp(svg(a.size, a), { density: 72 });
   if (a.opaque) img = img.flatten({ background: BG });
-  await img.png({ compressionLevel: 9 }).toFile(out(a.name));
-  console.log(`${a.name} ${a.size}x${a.size}`);
+  await img.png({ compressionLevel: 9 }).toFile(out(a.file));
+  console.log(`${a.file} ${a.size}x${a.size}`);
 }
+
+// A casinha que aparece no public/index.html enquanto o JS carrega.
+writeFileSync(out('public/marca.svg'), marca);
+console.log('public/marca.svg');

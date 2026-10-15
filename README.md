@@ -19,7 +19,8 @@ npx expo start --web
 ## Ícones
 
 A marca fica em `assets/brand/marca.svg`. Depois de mexer nela, gere de novo os PNGs de `assets/images`
-(ícone, adaptive icon do Android, splash e favicon). O sharp não entra no `package.json`:
+(ícone, adaptive icon do Android, splash e favicon) e os de `public/` (ícones para instalar a web na tela
+de início e a casinha que aparece enquanto o JS carrega). O sharp não entra no `package.json`:
 
 ```bash
 npm i --no-save sharp && node scripts/make-icons.mjs

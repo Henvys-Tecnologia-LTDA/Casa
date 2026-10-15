@@ -12,6 +12,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { SessionProvider } from '@/data/session';
 import { ConfirmProvider } from '@/ui/Sheet';
+import { Splash } from '@/ui/Splash';
 import { C } from '@/ui/theme';
 import { ToastProvider } from '@/ui/Toast';
 
@@ -26,7 +27,7 @@ export default function RootLayout() {
   useEffect(() => {
     if (ready) SplashScreen.hideAsync().catch(() => {});
   }, [ready]);
-  if (!ready) return null;
+  if (!ready) return <Splash label={false} />;
   return (
     <SafeAreaProvider>
       <KeyboardProvider>
