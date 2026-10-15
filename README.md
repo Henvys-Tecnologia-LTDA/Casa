@@ -16,6 +16,15 @@ npx expo start --web
   (`npx expo export -p web`, pasta `dist`).
 - **Android (APK):** `npx eas-cli build -p android --profile preview`.
 
+## Ícones
+
+A marca fica em `assets/brand/marca.svg`. Depois de mexer nela, gere de novo os PNGs de `assets/images`
+(ícone, adaptive icon do Android, splash e favicon). O sharp não entra no `package.json`:
+
+```bash
+npm i --no-save sharp && node scripts/make-icons.mjs
+```
+
 ## Banco
 
 As migrations ficam em `supabase/migrations`. O app só usa a URL e a chave publicável do Supabase
