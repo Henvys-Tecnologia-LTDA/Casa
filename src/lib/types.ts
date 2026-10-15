@@ -29,6 +29,8 @@ export interface Member {
   user_id: string;
   display_name: string;
   joined_at: string;
+  notify_paused: boolean;
+  notify_off: string[]; // "<aba>:novo" ou "<aba>:feito" que esta pessoa não quer receber
 }
 
 interface Base {

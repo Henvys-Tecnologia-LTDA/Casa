@@ -46,6 +46,14 @@
         }
       ],
       [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#E2504F",
+          "defaultChannel": "avisos"
+        }
+      ],
+      [
         "expo-image-picker",
         {
           "photosPermission": "O app usa suas fotos para mostrar os itens, apês e viagens de vocês.",

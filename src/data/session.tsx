@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Session } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
+import { disablePush } from '@/lib/push';
 import { supabase } from '@/lib/supabase';
 
 // Sessão do usuário (Supabase Auth) e qual casal está aberto no aparelho.
@@ -99,6 +100,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    await disablePush().catch(() => {});
     await supabase.auth.signOut().catch(() => {});
     await AsyncStorage.removeItem(KEY).catch(() => {});
     setCurrent(null);

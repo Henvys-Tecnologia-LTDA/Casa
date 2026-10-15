@@ -112,6 +112,7 @@ interface DataCtx {
   remove: (table: TableName, id: string) => Promise<void>;
   updateHousehold: (patch: Partial<Pick<Household, 'name' | 'name_a' | 'name_b' | 'renda' | 'budget_casa' | 'budget_switch' | 'photo' | 'tabs'>>) => Promise<void>;
   updateMyName: (name: string) => Promise<void>;
+  updateMyNotify: (patch: Partial<Pick<Member, 'notify_paused' | 'notify_off'>>) => Promise<void>;
   regenerateInvite: () => Promise<string>;
   reload: () => Promise<void>;
 }
@@ -271,6 +272,17 @@ export function DataProvider({ hid, children }: { hid: string; children: ReactNo
     refreshMemberships();
   }, [hid, me, loadMembers, refreshMemberships]);
 
+  // Preferências de avisos de quem está usando o app, neste casal (otimista; o Realtime confirma).
+  const updateMyNotify = useCallback<DataCtx['updateMyNotify']>(async patch => {
+    const prev = store.state.members;
+    store.set(s => ({ ...s, members: s.members.map(m => (m.user_id === me ? { ...m, ...patch } : m)) }));
+    const { error } = await supabase.from('household_members').update(patch).eq('household_id', hid).eq('user_id', me);
+    if (error) {
+      store.set(s => ({ ...s, members: prev }));
+      throw new Error(friendlyError(error));
+    }
+  }, [hid, me, store]);
+
   const regenerateInvite = useCallback(async () => {
     const { data, error } = await supabase.rpc('regenerate_invite', { p_household: hid });
     if (error) throw new Error(friendlyError(error));
@@ -280,8 +292,8 @@ export function DataProvider({ hid, children }: { hid: string; children: ReactNo
   }, [hid, store]);
 
   const value = useMemo<DataCtx>(() => ({
-    store, hid, me, insert, update, remove, updateHousehold, updateMyName, regenerateInvite, reload,
-  }), [store, hid, me, insert, update, remove, updateHousehold, updateMyName, regenerateInvite, reload]);
+    store, hid, me, insert, update, remove, updateHousehold, updateMyName, updateMyNotify, regenerateInvite, reload,
+  }), [store, hid, me, insert, update, remove, updateHousehold, updateMyName, updateMyNotify, regenerateInvite, reload]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

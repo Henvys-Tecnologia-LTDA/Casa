@@ -1,7 +1,8 @@
-// Gera o ícone, o adaptive icon do Android, a splash, o favicon e os ícones de instalação da web
+// Gera o ícone, o adaptive icon do Android, a splash, o ícone dos avisos, o favicon e os ícones de instalação da web
 // (public/) a partir de assets/brand/marca.svg.
 // O sharp não é dependência do app; instale só para rodar:
 //   npm i --no-save sharp && node scripts/make-icons.mjs
+import { Buffer } from 'node:buffer';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname } from 'node:path';
@@ -48,6 +49,8 @@ const ASSETS = [
   { file: 'assets/images/android-icon-monochrome.png', size: 1024, box: 0.54, color: INK },
   // Splash: fundo vem do plugin expo-splash-screen; a imagem é exibida com imageWidth.
   { file: 'assets/images/splash-icon.png', size: 1024, box: 1 },
+  // Ícone pequeno dos avisos no Android (barra de status): silhueta branca; o sistema pinta com a cor do plugin.
+  { file: 'assets/images/notification-icon.png', size: 96, box: 0.96, color: '#FFFFFF', stroke: 1.8 },
   // Favicon: com fundo, para não sumir em aba escura; traço mais grosso para 16–48 px.
   { file: 'assets/images/favicon.png', size: 48, box: 0.86, stroke: 2, tile: true, radius: 0.22 },
   // Web instalada (public/manifest.json e public/index.html). O iPhone arredonda o ícone sozinho.

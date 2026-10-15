@@ -30,3 +30,19 @@ npm i --no-save sharp && node scripts/make-icons.mjs
 
 As migrations ficam em `supabase/migrations`. O app só usa a URL e a chave publicável do Supabase
 (`src/lib/config.ts`); quem protege os dados é o RLS por membro do casal.
+
+## Avisos
+
+Quando alguém adiciona ou conclui algo, os outros membros do casal recebem um aviso. Cada um escolhe o que
+quer receber em Ajustes → Avisos (por aba, "novos" e "concluídos", ou pausar tudo).
+
+- Gatilhos no banco anotam os eventos; um cron por minuto chama a Edge Function `notify`
+  (`supabase/functions/notify`), que junta o que a mesma pessoa fez na mesma aba e manda um aviso só,
+  cerca de 1 minuto depois da última mudança.
+- **Android:** pelo Expo push, no APK. Precisa do Firebase: `google-services.json` na raiz (referenciado
+  em `android.googleServicesFile` no `app.json`) e a chave da conta de serviço do Firebase (FCM V1)
+  enviada em expo.dev → Credentials. A chave da conta de serviço nunca entra no repositório.
+- **iPhone e computador:** web push pelo site (`public/sw.js`). No iPhone só funciona com o site
+  adicionado à Tela de Início (iOS 16.4 ou mais novo).
+- Para publicar a função de novo: `npx supabase functions deploy notify --no-verify-jwt` (ela confere
+  uma senha guardada no Vault em vez do JWT).

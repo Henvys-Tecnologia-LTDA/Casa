@@ -18,6 +18,7 @@ import { ACCENT, C, F, soft } from '@/ui/theme';
 import { useToast } from '@/ui/Toast';
 
 import { useSheets } from '../sheetsCtx';
+import { NotifyPanel } from './NotifyPanel';
 
 // Ajustes do casal (nomes, renda, tetos) + convite, membros, trocar de casal e sair.
 export function SettingsScreen() {
@@ -132,6 +133,8 @@ export function SettingsScreen() {
           })}
         </View>
       </Panel>
+
+      <NotifyPanel />
 
       <Panel title="Nomes" icon="users">
         <Field label="Nome do casal (aparece na lista de casais)" value={coupleName} onChangeText={setCoupleName} placeholder="Ex.: Camila e Luis" />
