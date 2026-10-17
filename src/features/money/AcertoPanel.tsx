@@ -19,7 +19,7 @@ export function AcertoPanel() {
   const sheets = useSheets();
   const confirm = useConfirm();
   const toast = useToast();
-  const r = acerto(d.t.items, d.t.settlements, d.t.trip_costs);
+  const r = acerto(d.t.items, d.t.settlements, d.t.trip_costs, d.t.bill_payments);
   if (!(r.a + r.b + r.none > 0) && !d.t.settlements.length) return null;
 
   const quites = Math.abs(r.diff) < 0.5;
@@ -74,8 +74,8 @@ export function AcertoPanel() {
           })}
         </View>
       ) : null}
-      {r.none > 0.5 ? <Hint>{`${money(r.none)} em compras e custos sem “quem pagou” ficam fora da conta.`}</Hint> : null}
-      <Hint>{`Conta as compras com “quem pagou” em ${d.tabLabel('casa')} e ${d.tabLabel('switch')} e os custos já pagos das viagens. O que é dos dois conta metade para cada um.`}</Hint>
+      {r.none > 0.5 ? <Hint>{`${money(r.none)} em compras, custos e contas sem “quem pagou” ficam fora da conta.`}</Hint> : null}
+      <Hint>{`Conta as compras com “quem pagou” em ${d.tabLabel('casa')} e ${d.tabLabel('switch')}, os custos já pagos das viagens e as contas da casa pagas. O que é dos dois conta metade para cada um.`}</Hint>
     </Panel>
   );
 }

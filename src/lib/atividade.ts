@@ -8,13 +8,14 @@ export interface Atividade {
   id: number;
   actor: string;
   actor_name: string;
-  tab: TabKey;
-  kind: 'novo' | 'feito';
+  /** Aba do app, ou "mercado" (a lista do mercado fica fora das abas). */
+  tab: TabKey | 'mercado';
+  kind: 'novo' | 'feito' | 'comentario' | 'reacao';
   tbl: string;
   row_id: string;
   label: string;
   link: string;
-  extra: { amount?: number; status?: string; parent?: string };
+  extra: { amount?: number; status?: string; parent?: string; body?: string; emoji?: string };
   created_at: string;
 }
 
@@ -37,6 +38,9 @@ export function frase(e: Pick<Atividade, 'tbl' | 'kind' | 'label' | 'extra'>): s
     case 'trip_deposits:feito': return tirou ? `tirou ${money(amount)} do cofrinho de ${q(e.label)}` : `guardou ${money(amount)} no cofrinho de ${q(e.label)}`;
     case 'goals:novo': return `criou a meta ${q(e.label)}`;
     case 'goal_deposits:feito': return tirou ? `tirou ${money(amount)} da meta ${q(e.label)}` : `guardou ${money(amount)} na meta ${q(e.label)}`;
+    case 'comments:comentario': return `comentou em ${q(e.label)}${e.extra?.body ? `: ${q(e.extra.body)}` : ''}`;
+    case 'bill_payments:feito': return `pagou a conta ${q(e.label)}${amount ? ` (${money(amount)})` : ''}`;
+    case 'groceries:novo': return `pôs ${q(e.label)} na lista do mercado`;
   }
   return `mexeu em ${q(e.label)}`;
 }

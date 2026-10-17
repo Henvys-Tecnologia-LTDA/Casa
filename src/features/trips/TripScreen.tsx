@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { useActions, useData } from '@/data/DataProvider';
-import { CAT, CATS, countdown, PACK_BASIC, tripCalc, TSTATUS_L } from '@/lib/calc';
+import { CAT, CATS, countdown, tripCalc, TSTATUS_L } from '@/lib/calc';
 import { textoMala } from '@/lib/compartilhar';
 import { dateBR, dayLabel, money, parsePrice, plural } from '@/lib/format';
+import { MALAS } from '@/lib/modelos';
 import { Icon } from '@/ui/Icon';
-import { Btn, CheckBox, Empty, Field, IconBtn, LikeBtn, Meter, Mini, Minis, Muted, Panel, Pill, Serif, Txt } from '@/ui/kit';
+import { Btn, CheckBox, Chip, Empty, Field, IconBtn, LikeBtn, Meter, Mini, Minis, Muted, Panel, Pill, Serif, Txt } from '@/ui/kit';
 import { Photo } from '@/ui/Photo';
 import { BackBar, Loading, Screen } from '@/ui/Screen';
 import { ACCENT, C, R, soft } from '@/ui/theme';
@@ -16,6 +17,7 @@ import { useApagar } from '@/ui/useApagar';
 
 import { Badge } from '../ape/ApeHome';
 import { useSheets } from '../sheetsCtx';
+import { RoteiroPanel } from './Roteiro';
 
 export function TripScreen({ id }: { id: string }) {
   const d = useData();
@@ -161,6 +163,8 @@ export function TripScreen({ id }: { id: string }) {
         ) : null}
       </Panel>
 
+      <RoteiroPanel t={t} />
+
       <Panel title="Mala" icon="suitcase" right={packing.length ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <Muted size={13}>{`${pkDone} de ${packing.length}`}</Muted>
@@ -183,7 +187,10 @@ export function TripScreen({ id }: { id: string }) {
             ))}
           </View>
         ) : (
-          <View style={{ alignSelf: 'flex-start' }}><Btn label="Começar com uma lista básica" kind="ghost" size="sm" icon="suitcase" onPress={() => packAdd(PACK_BASIC)} /></View>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
+            <Muted size={13}>Começar com uma mala pronta:</Muted>
+            {Object.values(MALAS).map(m => <Chip key={m.label} label={m.label} icon="suitcase" onPress={() => packAdd(m.itens)} />)}
+          </View>
         )}
       </Panel>
       {t.notes ? <Panel title="Observações" icon="pencil"><Txt>{t.notes}</Txt></Panel> : null}

@@ -5,10 +5,11 @@ import { Pressable, View } from 'react-native';
 import { useActions, useData } from '@/data/DataProvider';
 import { ICONS, optsOf, TABS } from '@/lib/calc';
 import { fmtInput, parsePrice, plural } from '@/lib/format';
+import { ENXOVAL } from '@/lib/modelos';
 import type { Section, ShopList } from '@/lib/types';
 import { MoneyField } from '@/ui/fields';
 import { Icon } from '@/ui/Icon';
-import { AccentCtx, Btn, ErrText, Field, Txt } from '@/ui/kit';
+import { AccentCtx, Btn, ErrText, Field, Toggle, Txt } from '@/ui/kit';
 import { useApagar } from '@/ui/useApagar';
 import { Sheet, Spacer, useConfirm } from '@/ui/Sheet';
 import { ACCENT, C, R, soft } from '@/ui/theme';
@@ -27,6 +28,8 @@ export function SectionSheet({ list, sec, name: name0, onClose }: { list: ShopLi
   const [name, setName] = useState(sec?.name || name0 || '');
   const [budget, setBudget] = useState(Number(sec?.budget) ? fmtInput(sec?.budget) : '');
   const [icon, setIcon] = useState(ICONS.some(([k]) => k === sec?.icon) ? sec!.icon : T.defIcon);
+  const [measures, setMeasures] = useState(sec?.measures || '');
+  const [modelo, setModelo] = useState(false);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -38,12 +41,14 @@ export function SectionSheet({ list, sec, name: name0, onClose }: { list: ShopLi
     setBusy(true);
     try {
       if (sec) {
-        await update('sections', sec.id, { name: nm, icon, budget: b });
+        await update('sections', sec.id, { name: nm, icon, budget: b, measures: measures.trim() });
         onClose();
         toast('Alterações salvas');
       } else {
         const order = Math.max(0, ...d.secs(L).map(s => Number(s.sort_order) || 0)) + 1;
-        const row = await insert('sections', { list: L, name: nm, icon, sort_order: order, budget: b });
+        const row = await insert('sections', { list: L, name: nm, icon, sort_order: order, budget: b, measures: measures.trim() });
+        // Modelo pronto: os itens comuns deste tipo de cômodo, sem preço.
+        if (modelo && enxoval.length) for (const n of enxoval) await insert('items', { section_id: row.id, name: n });
         onClose();
         router.push({ pathname: '/section/[id]', params: { id: row.id } });
         toast(`${nm} criado`, 'plus');
@@ -54,6 +59,8 @@ export function SectionSheet({ list, sec, name: name0, onClose }: { list: ShopLi
       setBusy(false);
     }
   }
+
+  const enxoval = !sec && L === 'casa' ? ENXOVAL[icon] ?? [] : [];
 
   async function del() {
     if (!sec) return;
@@ -101,6 +108,12 @@ export function SectionSheet({ list, sec, name: name0, onClose }: { list: ShopLi
             })}
           </View>
         </View>
+        {L === 'casa' ? (
+          <Field label="Medidas (opcional)" value={measures} onChangeText={setMeasures} placeholder="Ex.: 3,2 × 4,1 m · parede da TV 2,10 m" maxLength={300} />
+        ) : null}
+        {enxoval.length ? (
+          <Toggle label={`Já começar com ${enxoval.length} itens comuns (${enxoval.slice(0, 3).join(', ')}…)`} value={modelo} onChange={setModelo} />
+        ) : null}
         <ErrText msg={err} />
       </Sheet>
     </AccentCtx.Provider>

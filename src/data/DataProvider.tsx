@@ -33,16 +33,21 @@ interface State {
 const emptyTables = (): DataTables => ({
   sections: [], items: [], tasks: [], apartments: [], trips: [],
   trip_costs: [], trip_deposits: [], packing_items: [], goals: [], goal_deposits: [], settlements: [],
+  comments: [], reactions: [], inspirations: [], notes: [], bills: [], bill_payments: [], groceries: [], trip_plans: [],
 });
 
 // Valores padrão de cada tabela (os mesmos do banco), para a linha nova já aparecer completa.
 const DEFAULTS: { [K in TableName]: Partial<RowOf<K>> } = {
-  sections: { list: 'casa', icon: 'box', sort_order: 0, budget: 0 },
+  sections: { list: 'casa', icon: 'box', sort_order: 0, budget: 0, measures: '' },
   items: {
     price: 0, qty: 1, priority: 'media', phase: '', coop: false, notes: '', image: '', store: '', link: '', options: [], chosen: '',
     bought: false, gift: false, paid: null, payer: '', parcelas: 1, parc_start: '', bought_by: null, bought_at: null, estimado: false,
+    width: 0, depth: 0, height: 0, space: 0, warranty_until: null, manual: '',
   },
-  tasks: { phase: '', who: '', due: null, notes: '', done: false, done_by: null, done_at: null },
+  tasks: {
+    phase: '', who: '', due: null, notes: '', done: false, done_by: null, done_at: null,
+    doing: false, steps: [], repeat: '', rotate: false, last_done_at: null, last_done_by: null,
+  },
   apartments: {
     address: '', link: '', status: 'visitar', price: 0, area: 0, rooms: 0, parking: 0, entrada: 0, fgts: 0, entrada_tipo: 'vista',
     entrada_parcelas: 24, inicio: 'depois', inicio_mes: '', taxa: 11.5, prazo: 360, seguro: 0, sistema: 'SAC', condo: 0, iptu: 0,
@@ -55,25 +60,37 @@ const DEFAULTS: { [K in TableName]: Partial<RowOf<K>> } = {
   goals: { target: 0, deadline: '' },
   goal_deposits: { who: 'ambos', by_user: null },
   settlements: { note: '', by_user: null },
+  comments: { by_user: null },
+  reactions: { by_user: null },
+  inspirations: { image: '', link: '', note: '', sort_order: 0 },
+  notes: { kind: 'nota', body: '', phone: '', sort_order: 0 },
+  bills: { amount: 0, due_day: 10, payer: '', active: true },
+  bill_payments: { payer: '', by_user: null },
+  groceries: { qty: '', cat: 'outros', done: false, done_at: null, by_user: null },
+  trip_plans: { day: null, hour: '', link: '', image: '', sort_order: 0 },
 };
 // O que o banco apaga junto (on delete cascade), para o desfazer recolocar.
 const CHILDREN: Partial<Record<TableName, [TableName, string][]>> = {
-  sections: [['items', 'section_id']],
-  trips: [['trip_costs', 'trip_id'], ['trip_deposits', 'trip_id'], ['packing_items', 'trip_id']],
+  sections: [['items', 'section_id'], ['inspirations', 'section_id']],
+  items: [['comments', 'target_id']],
+  tasks: [['comments', 'target_id']],
+  trips: [['trip_costs', 'trip_id'], ['trip_deposits', 'trip_id'], ['packing_items', 'trip_id'], ['trip_plans', 'trip_id']],
   goals: [['goal_deposits', 'goal_id']],
+  bills: [['bill_payments', 'bill_id']],
 };
-const NO_UPDATED_AT = new Set<TableName>(['trip_deposits', 'goal_deposits', 'settlements']);
+const NO_UPDATED_AT = new Set<TableName>(['trip_deposits', 'goal_deposits', 'settlements', 'comments', 'reactions', 'bill_payments']);
 
 // O Postgres manda "numeric" como número, mas por garantia convertemos textos numéricos.
 const NUMERIC = new Set([
   'price', 'paid', 'budget', 'renda', 'budget_casa', 'budget_switch', 'amount', 'target', 'area', 'entrada', 'fgts',
-  'taxa', 'seguro', 'condo', 'iptu', 'itbi', 'cartorio',
+  'taxa', 'seguro', 'condo', 'iptu', 'itbi', 'cartorio', 'width', 'depth', 'height', 'space', 'event_id',
 ]);
 function normalize<T>(row: T): T {
   const r: any = { ...(row as any) };
   for (const k of Object.keys(r)) if (NUMERIC.has(k) && typeof r[k] === 'string') r[k] = Number(r[k]);
   if ('options' in r && !Array.isArray(r.options)) r.options = [];
   if ('likes' in r && !Array.isArray(r.likes)) r.likes = [];
+  if ('steps' in r && !Array.isArray(r.steps)) r.steps = [];
   if ('tabs' in r && (!r.tabs || typeof r.tabs !== 'object' || Array.isArray(r.tabs))) r.tabs = {};
   return r as T;
 }
@@ -140,7 +157,7 @@ interface DataCtx {
   remove: (table: TableName, id: string) => Promise<void>;
   /** Apaga e devolve como desfazer: recoloca a linha e o que saiu junto (itens do cômodo, custos da viagem…). */
   removeUndo: (table: TableName, id: string) => Promise<() => Promise<void>>;
-  updateHousehold: (patch: Partial<Pick<Household, 'name' | 'name_a' | 'name_b' | 'renda' | 'budget_casa' | 'budget_switch' | 'photo' | 'tabs'>>) => Promise<void>;
+  updateHousehold: (patch: Partial<Pick<Household, 'name' | 'name_a' | 'name_b' | 'renda' | 'budget_casa' | 'budget_switch' | 'photo' | 'tabs' | 'work_a' | 'work_b'>>) => Promise<void>;
   updateMyName: (name: string) => Promise<void>;
   updateMyNotify: (patch: Partial<Pick<Member, 'notify_paused' | 'notify_off'>>) => Promise<void>;
   regenerateInvite: () => Promise<string>;
@@ -363,7 +380,8 @@ export function DataProvider({ hid, children }: { hid: string; children: ReactNo
     for (const [t, rows] of kids) for (const r of rows) store.remove(t, r.id);
     return async () => {
       if (row) await insert(table, row as any);
-      for (const [t, rows] of kids) for (const r of rows) await insert(t, r);
+      // O que saiu junto volta no melhor esforço (o comentário do outro não pode ser regravado por você).
+      for (const [t, rows] of kids) for (const r of rows) await insert(t, r).catch(() => {});
     };
   }, [store, remove, insert]);
 

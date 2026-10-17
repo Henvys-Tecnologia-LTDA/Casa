@@ -4,7 +4,7 @@ import {
   addM, daysUntil, diffM, money, nextYm, validYm, ymOf,
 } from './format';
 import type {
-  Apartment, Goal, GoalDeposit, Item, ItemOption, PackingItem, Section, Settlement, ShopList, Task, Trip, TripCost, TripDeposit,
+  Apartment, BillPayment, Goal, GoalDeposit, Item, ItemOption, PackingItem, Section, Settlement, ShopList, Task, Trip, TripCost, TripDeposit,
 } from './types';
 
 export const PARCELAS = 10;
@@ -83,10 +83,10 @@ export function balance(items: Item[]) {
 }
 
 /**
- * Acerto do casal (como o Splitwise): junta as compras e os custos de viagem pagos, com "quem pagou", e desconta
+ * Acerto do casal (como o Splitwise): junta as compras, os custos de viagem e as contas fixas pagas, com "quem pagou", e desconta
  * os acertos já feitos. diff > 0: a pessoa B passa diff para A; diff < 0: A passa para B.
  */
-export function acerto(items: Item[], settlements: Settlement[], costs: TripCost[] = []) {
+export function acerto(items: Item[], settlements: Settlement[], costs: TripCost[] = [], contas: Pick<BillPayment, 'amount' | 'payer'>[] = []) {
   const base = balance(items);
   // Custos de viagem já pagos contam como as compras ("os dois" = metade para cada).
   for (const c of costs) {
@@ -95,6 +95,13 @@ export function acerto(items: Item[], settlements: Settlement[], costs: TripCost
     if (c.payer === 'a') base.a += v;
     else if (c.payer === 'b') base.b += v;
     else if (c.payer === 'ambos') { base.a += v / 2; base.b += v / 2; } else base.none += v;
+  }
+  // Contas fixas pagas no mês (aluguel, luz…), do mesmo jeito.
+  for (const p of contas) {
+    const v = Number(p.amount) || 0;
+    if (p.payer === 'a') base.a += v;
+    else if (p.payer === 'b') base.b += v;
+    else if (p.payer === 'ambos') { base.a += v / 2; base.b += v / 2; } else base.none += v;
   }
   base.diff = (base.a - base.b) / 2;
   let deA = 0, deB = 0; // o que cada um já passou para o outro

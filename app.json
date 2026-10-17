@@ -83,6 +83,13 @@
             }
           ]
         }
+      ],
+      [
+        "expo-share-intent",
+        {
+          "disableIOS": true,
+          "androidIntentFilters": ["text/*"]
+        }
       ]
     ],
     "experiments": {

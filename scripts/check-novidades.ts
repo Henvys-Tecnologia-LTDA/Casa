@@ -4,8 +4,13 @@
 import { frase, porDia, rotuloDia } from '../src/lib/atividade';
 import { acerto, agenda, gastosPorMes } from '../src/lib/calc';
 import { textoLista, textoTarefas } from '../src/lib/compartilhar';
+import { contasDoMes, situacao, vencimento } from '../src/lib/contas';
 import { marcos, novos } from '../src/lib/marcos';
+import { cabe, cabeTxt, lerCm, medidasTxt } from '../src/lib/medidas';
+import { lerItem, porSecao, secaoDe, textoMercado } from '../src/lib/mercado';
 import { csv, planilha } from '../src/lib/planilha';
+import { diasDaViagem, lerHora, roteiroPorDia } from '../src/lib/roteiro';
+import { colunaDe, concluirRepetida, passosTxt, proximoPrazo, proximoQuem } from '../src/lib/tarefas';
 import type { DataTables, TabKey } from '../src/lib/types';
 import { linhasWidget, resumoWidget } from '../src/lib/widget';
 
@@ -149,6 +154,71 @@ console.log('Widget do Android');
   check(linhasWidget(r, 1).length === 1, 'respeita quantas linhas cabem');
   const esc = resumoWidget('h', t, tabs(['mudanca', 'switch']));
   check(esc.tarefas === null && esc.listas.map(x => x.tab).join() === 'casa', 'abas escondidas ficam de fora');
+}
+
+console.log('Tarefas: repetir, revezar e passos');
+{
+  const agora = new Date(2026, 9, 16, 10);
+  check(proximoPrazo('2026-10-16', 'semana', agora) === '2026-10-23', 'toda semana: +7 dias');
+  check(proximoPrazo('2026-09-01', 'semana', agora) === '2026-10-20', 'atrasada há semanas: pula para depois de hoje');
+  check(proximoPrazo('2026-01-31', 'mes', new Date(2026, 0, 31)) === '2026-02-28', 'todo mês: 31 em fevereiro vira 28');
+  check(proximoPrazo(null, 'quinzena', agora) === '2026-10-30', 'sem prazo: a partir de hoje');
+  check(proximoQuem('a', true) === 'b' && proximoQuem('b', true) === 'a' && proximoQuem('ambos', true) === 'ambos' && proximoQuem('a', false) === 'a', 'revezar entre os dois');
+  const p = concluirRepetida({ due: '2026-10-16', repeat: 'semana', who: 'a', rotate: true, steps: [{ id: '1', text: 'x', done: true }] }, 'eu', agora);
+  check(p.due === '2026-10-23' && p.who === 'b' && p.done === false && p.steps?.[0].done === false && p.last_done_by === 'eu', 'feita: fica aberta, próximo prazo, outra pessoa, passos zerados');
+  check(passosTxt({ steps: [{ id: '1', text: 'a', done: true }, { id: '2', text: 'b', done: false }] }) === '1/2' && passosTxt({ steps: [] }) === '', 'passos 1/2');
+  check(colunaDe({ done: false, doing: true }) === 'fazendo' && colunaDe({ done: true, doing: true }) === 'feito' && colunaDe({ done: false, doing: false }) === 'fazer', 'coluna do quadro');
+}
+
+console.log('Mercado');
+{
+  const casos: [string, string][] = [['Macarrão', 'mercearia'], ['maçãs', 'hortifruti'], ['Pão de queijo', 'congelados'], ['Água sanitária', 'limpeza'], ['Água com gás', 'bebidas'], ['peito de peru', 'frios'], ['Peito de frango', 'acougue'], ['Ração', 'pet'], ['Coisa estranha', 'outros']];
+  check(casos.every(([t, c]) => secaoDe(t) === c), `seção certa (${casos.filter(([t, c]) => secaoDe(t) !== c).map(([t]) => t).join(', ') || 'todas'})`);
+  check(JSON.stringify(lerItem('2 kg arroz')) === '{"qty":"2 kg","text":"Arroz"}' && JSON.stringify(lerItem('leite x2')) === '{"qty":"2","text":"Leite"}' && lerItem('Pão').qty === '', 'quantidade antes ou depois');
+  const g = (text: string, cat: string, done = false) => ({ ...base, id: text, text, qty: '', cat, done, done_at: null, by_user: null }) as any;
+  const secs = porSecao([g('Sabão', 'limpeza'), g('Banana', 'hortifruti'), g('Arroz', 'mercearia'), g('Leite', 'frios', true)]);
+  check(secs.map(s => s.cat).join() === 'hortifruti,mercearia,limpeza', 'na ordem do mercado, sem os do carrinho');
+  check(textoMercado([g('Banana', 'hortifruti')]).startsWith('*Mercado*: 1 item'), 'texto do WhatsApp');
+}
+
+console.log('Contas da casa');
+{
+  check(vencimento({ due_day: 31 }, '2026-02').getDate() === 28 && vencimento({ due_day: 10 }, '2026-10').getDate() === 10, 'dia 31 em fevereiro vira 28');
+  const agora = new Date(2026, 9, 16);
+  check(situacao({ due_day: 16 }, undefined, '2026-10', agora).label === 'vence hoje' && situacao({ due_day: 14 }, undefined, '2026-10', agora).label === 'atrasada há 2 dias', 'vence hoje / atrasada');
+  check(situacao({ due_day: 1 }, { amount: 100, payer: 'a' }, '2026-10', agora).pago, 'paga');
+  const bills = [{ ...base, id: 'luz', name: 'Luz', amount: 180, due_day: 10, payer: 'a', active: true }, { ...base, id: 'net', name: 'Internet', amount: 120, due_day: 5, payer: 'b', active: true }, { ...base, id: 'old', name: 'Velha', amount: 50, due_day: 1, payer: '', active: false }] as any;
+  const pays = [{ ...base, id: 'p1', bill_id: 'luz', ym: '2026-10', amount: 200, payer: 'a', by_user: null }] as any;
+  const m = contasDoMes(bills, pays, '2026-10');
+  check(m.lista.map(x => x.b.id).join() === 'net,luz' && m.total === 320 && m.pago === 200, 'contas do mês: pausada fora, total com o valor pago');
+  const items = [item('sofa', 's', { bought: true, paid: 1000, payer: 'a' })];
+  const r = acerto(items, [], [], [{ amount: 200, payer: 'b' }, { amount: 100, payer: 'ambos' }]);
+  check(r.a === 1050 && r.b === 250 && r.diff === 400, `contas pagas entram no acerto (${JSON.stringify({ a: r.a, b: r.b, diff: r.diff })})`);
+}
+
+console.log('Medidas: cabe?');
+{
+  check(lerCm('220') === 220 && lerCm('2,2 m') === 220 && lerCm('85cm') === 85 && lerCm('') === 0 && lerCm('abc') === null, 'lê cm e metros');
+  check(cabe({ width: 220, space: 200 })?.ok === false && cabeTxt(cabe({ width: 220, space: 200 })!) === 'Não cabe: faltam 20 cm', 'não cabe: faltam 20 cm');
+  check(cabeTxt(cabe({ width: 190, space: 200 })!) === 'Cabe: sobram 10 cm' && cabe({ width: 0, space: 200 }) === null, 'cabe e sem medida');
+  check(medidasTxt({ width: 220, depth: 90, height: 0 }) === '220 × 90 × ? cm' && medidasTxt({ width: 0, depth: 0, height: 0 }) === '', 'texto das medidas');
+}
+
+console.log('Roteiro da viagem');
+{
+  const trip = { start_date: '2026-12-16', end_date: '2026-12-18' };
+  const dias = diasDaViagem(trip);
+  check(dias.length === 3 && dias[0].label === 'Dia 1 · qua., 16 de dez.', 'dias da viagem com rótulo');
+  const pl = (id: string, day: string | null, hour = '') => ({ ...base, id, trip_id: 'v', day, hour, text: id, link: '', image: '', sort_order: 0 }) as any;
+  const g = roteiroPorDia(trip, [pl('jantar', '2026-12-16', '20:00'), pl('museu', '2026-12-16', '10:00'), pl('livre', null), pl('fora', '2027-01-05')]);
+  check(g.length === 2 && g[0].itens.map(x => x.id).join() === 'museu,jantar' && g[1].label === 'Sem dia' && g[1].itens.length === 2, 'por dia e horário; sem dia no fim');
+  check(lerHora('9:30') === '09:30' && lerHora('14h') === '14:00' && lerHora('') === '' && lerHora('25:00') === null, 'horário');
+}
+
+console.log('Widget com mercado');
+{
+  const t = { tasks: [], sections: [], items: [], groceries: [{ done: false }, { done: true }, { done: false }] } as any;
+  check(resumoWidget('h', t, { label: (k: TabKey) => k, hidden: () => false }).mercado === 2, 'conta só o que falta no mercado');
 }
 
 console.log(`\n${ok} ok, ${bad} falharam`);

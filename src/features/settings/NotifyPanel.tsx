@@ -20,8 +20,14 @@ const KINDS: Record<TabKey, { novo: string; feito: string }> = {
   ape: { novo: 'Apês novos', feito: 'Mudou de status' },
   mudanca: { novo: 'Tarefas novas', feito: 'Concluídas' },
   viagem: { novo: 'Viagens e custos', feito: 'Cofrinho' },
-  dinheiro: { novo: 'Metas novas', feito: 'Depósitos' },
+  dinheiro: { novo: 'Metas novas', feito: 'Depósitos e contas pagas' },
 };
+
+// Fora das abas: a lista do mercado e a conversa ("*:" vale para todas as abas).
+const EXTRAS: { key: string; label: string; icon: string; color: () => string; chips: [string, string][] }[] = [
+  { key: 'mercado', label: 'Mercado', icon: 'cart', color: () => C.ok, chips: [['mercado:novo', 'Itens novos']] },
+  { key: 'conversa', label: 'Conversa', icon: 'chat', color: () => C.coral, chips: [['*:comentario', 'Comentários'], ['*:reacao', 'Reações']] },
+];
 
 // Avisos: ligar neste aparelho + o que cada pessoa quer receber neste casal.
 export function NotifyPanel() {
@@ -81,6 +87,22 @@ export function NotifyPanel() {
                 {k === 'mudanca' ? (
                   <Chip label="Lembrete das 9h" on={!off.has('mudanca:lembrete')} onPress={() => flip('mudanca:lembrete')} />
                 ) : null}
+                {k === 'dinheiro' ? (
+                  <Chip label="Contas a vencer" on={!off.has('dinheiro:conta')} onPress={() => flip('dinheiro:conta')} />
+                ) : null}
+              </View>
+            </View>
+          </View>
+        ))}
+        {EXTRAS.map(x => (
+          <View key={x.key} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderTopWidth: 1, borderTopColor: C.line, backgroundColor: C.surface }}>
+            <View style={{ width: 38, height: 38, borderRadius: 8, backgroundColor: soft(x.color()), alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name={x.icon} size={20} color={x.color()} />
+            </View>
+            <View style={{ flex: 1, gap: 8 }}>
+              <Txt w="semibold">{x.label}</Txt>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                {x.chips.map(([key, label]) => <Chip key={key} label={label} on={!off.has(key)} onPress={() => flip(key)} />)}
               </View>
             </View>
           </View>

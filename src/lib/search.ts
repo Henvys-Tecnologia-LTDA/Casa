@@ -6,12 +6,14 @@ import type { DataTables, TabKey } from './types';
 // tarefas, apês, viagens, custos, mala e metas), filtra por tipo, mostra onde o termo apareceu e
 // leva direto até o objeto. Sem React aqui, para dar para testar no Node (scripts/check-search.ts).
 
-export type SearchKind = 'item' | 'section' | 'task' | 'apt' | 'trip' | 'cost' | 'pack' | 'goal' | 'tab' | 'ajustes' | 'atividade' | 'criar';
-export type SearchGroup = 'abas' | 'itens' | 'comodos' | 'tarefas' | 'apes' | 'viagens' | 'metas';
+export type SearchKind =
+  | 'item' | 'section' | 'task' | 'apt' | 'trip' | 'cost' | 'pack' | 'goal' | 'tab' | 'ajustes' | 'atividade' | 'criar'
+  | 'mercado' | 'caderno' | 'nota' | 'conta';
+export type SearchGroup = 'abas' | 'itens' | 'comodos' | 'tarefas' | 'apes' | 'viagens' | 'metas' | 'casa';
 
 export const GROUPS: [SearchGroup, string][] = [
   ['abas', 'Atalhos'], ['itens', 'Itens'], ['comodos', 'Cômodos e seções'], ['tarefas', 'Tarefas'],
-  ['apes', 'Apês'], ['viagens', 'Viagens'], ['metas', 'Metas'],
+  ['apes', 'Apês'], ['viagens', 'Viagens'], ['metas', 'Metas'], ['casa', 'Mercado, caderno e contas'],
 ];
 
 /** Campo além do título onde o termo pode aparecer (loja, observações, endereço...). */
@@ -64,6 +66,28 @@ export function buildIndex(t: DataTables, ctx: IndexCtx): SearchEntry[] {
   }
   out.push({ kind: 'atividade', id: 'atividade', tab: null, group: 'abas', icon: 'clock', title: 'O que mudou', sub: 'O que cada um fez nos últimos 30 dias', fields: [], done: false, updated: '' });
   out.push({ kind: 'ajustes', id: 'ajustes', tab: null, group: 'abas', icon: 'sliders', title: 'Ajustes do casal', sub: 'Foto, nomes, abas, tetos de gastos e avisos', fields: [], done: false, updated: '' });
+  out.push({ kind: 'mercado', id: 'mercado', tab: null, group: 'abas', icon: 'cart', title: 'Mercado', sub: 'A lista do dia a dia dos dois', fields: [], done: false, updated: '' });
+  out.push({ kind: 'caderno', id: 'caderno', tab: null, group: 'abas', icon: 'book', title: 'Caderno da casa', sub: 'Wi-fi, contatos, anotações e garantias', fields: [], done: false, updated: '' });
+
+  for (const g of t.groceries ?? []) {
+    if (g.done) continue;
+    out.push({ kind: 'mercado', id: g.id, tab: null, group: 'casa', icon: 'cart', title: g.text, sub: join('Mercado', g.qty), fields: [], done: false, updated: g.updated_at });
+  }
+  for (const n of t.notes ?? []) {
+    const tipo = n.kind === 'wifi' ? 'Wi-fi' : n.kind === 'contato' ? 'Contato' : 'Anotação';
+    out.push({
+      kind: 'nota', id: n.id, tab: null, group: 'casa', icon: n.kind === 'wifi' ? 'wifi' : n.kind === 'contato' ? 'phone' : 'book', title: n.title,
+      sub: join(tipo, n.phone), fields: fields(['Texto', n.kind === 'wifi' ? '' : n.body]), done: false, updated: n.updated_at,
+    });
+  }
+  if (on('dinheiro')) {
+    for (const b of t.bills ?? []) {
+      out.push({
+        kind: 'conta', id: b.id, tab: 'dinheiro', group: 'casa', icon: 'receipt', title: b.name,
+        sub: join('Conta da casa', `dia ${b.due_day}`, Number(b.amount) > 0 && money(b.amount)), fields: [], done: !b.active, updated: b.updated_at,
+      });
+    }
+  }
 
   const secs = new Map(t.sections.map(s => [s.id, s]));
   const count = new Map<string, number>();

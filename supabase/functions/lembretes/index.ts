@@ -1,4 +1,4 @@
-// Avisos das 9h: o lembrete da Mudança ("Para hoje: …" e as atrasadas) e o "baixou de preço" dos itens
+// Avisos das 9h: o lembrete da Mudança ("Para hoje: …" e as atrasadas), as contas da casa a vencer e o "baixou de preço" dos itens
 // com link (conferidos às 8h pela função ler-link). Quem chama é o cron do banco (private.kick_lembretes),
 // com a mesma senha da função notify. Fica separado da notify para um erro aqui nunca derrubar os avisos
 // normais; manda pelo Expo (app Android) e por web push (site instalado).
@@ -12,6 +12,8 @@ type Device = { kind: 'expo' | 'web'; endpoint: string; keys: { p256dh: string; 
 type Rem = { household: string; tabLabel: string; hoje: string[]; atrasadas: string[]; devices: Device[] };
 type Queda = { name: string; store: string; from: number; to: number; section: string };
 type Alerta = { household: string; list: string; tabLabel: string; drops: Queda[]; devices: Device[] };
+type Conta = { name: string; amount: number; dias: number };
+type Contas = { household: string; tabLabel: string; contas: Conta[]; devices: Device[] };
 type Msg = { title: string; body: string; url: string; household: string; devices: Device[] };
 
 const q = (s: string) => `“${s}”`;
@@ -39,6 +41,17 @@ export function textoQueda(drops: Queda[]) {
   return `${drops.length} itens baixaram de preço: ${xs.join(', ')}${drops.length > 3 ? ` e mais ${drops.length - 3}` : ''}`;
 }
 
+const quando = (dias: number) => (dias < 0 ? 'venceu ontem' : dias === 0 ? 'vence hoje' : `vence em ${dias} dias`);
+
+export function textoContas(cs: Conta[]) {
+  if (cs.length === 1) {
+    const c = cs[0];
+    return `${q(c.name)} ${quando(c.dias)}${Number(c.amount) ? ` (${money(c.amount)})` : ''}`;
+  }
+  const xs = cs.slice(0, 3).map(c => `${q(c.name)} ${quando(c.dias)}`);
+  return `${cs.length} contas: ${xs.join(', ')}${cs.length > 3 ? ` e mais ${cs.length - 3}` : ''}`;
+}
+
 Deno.serve(async req => {
   const secret = req.headers.get('x-notify-secret') ?? '';
   const [ok] = secret
@@ -48,12 +61,14 @@ Deno.serve(async req => {
 
   const [{ list }] = await sql`select private.take_task_reminders() as list`;
   const [{ alerts }] = await sql`select private.take_price_alerts() as alerts`;
+  const [{ bills }] = await sql`select private.take_bill_reminders() as bills`;
   const msgs: Msg[] = [
     ...(list as Rem[]).map(r => ({ title: `${r.tabLabel}: lembrete do dia`, body: texto(r), url: '/mudanca', household: r.household, devices: r.devices })),
     ...(alerts as Alerta[]).map(a => ({
       title: `${a.tabLabel}: baixou de preço`, body: textoQueda(a.drops),
       url: a.drops.length === 1 ? `/section/${a.drops[0].section}` : `/${a.list}`, household: a.household, devices: a.devices,
     })),
+    ...(bills as Contas[]).map(c => ({ title: `${c.tabLabel}: contas da casa`, body: textoContas(c.contas), url: '/dinheiro', household: c.household, devices: c.devices })),
   ];
   if (!msgs.length) return Response.json({ avisos: 0 });
 
@@ -107,5 +122,5 @@ Deno.serve(async req => {
   }
 
   if (gone.length) await sql`delete from private.push_devices where endpoint in ${sql(gone)}`;
-  return Response.json({ lembretes: (list as Rem[]).length, precos: (alerts as Alerta[]).length, expo: expo.length, web, failed, gone: gone.length });
+  return Response.json({ lembretes: (list as Rem[]).length, precos: (alerts as Alerta[]).length, contas: (bills as Contas[]).length, expo: expo.length, web, failed, gone: gone.length });
 });

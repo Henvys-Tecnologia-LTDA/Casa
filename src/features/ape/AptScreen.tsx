@@ -11,6 +11,7 @@ import { ACCENT, C, porTema, R, soft } from '@/ui/theme';
 import { useToast } from '@/ui/Toast';
 
 import { useSheets } from '../sheetsCtx';
+import { AteOTrabalho } from './Trabalho';
 import { Badge } from './ApeHome';
 
 const SERIES = porTema((): Series[] => [
@@ -70,6 +71,7 @@ export function AptScreen({ id }: { id: string }) {
       <View style={{ gap: 4 }}>
         <Serif size={34}>{a.name || 'Sem nome'}</Serif>
         <Muted>{[a.address, a.area ? `${fmtNum(a.area)} m²` : '', a.rooms ? `${a.rooms} quartos` : '', a.parking ? `${a.parking} vaga(s)` : ''].filter(Boolean).join(' · ')}</Muted>
+        <AteOTrabalho address={a.address || ''} />
       </View>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         <LikeBtn on={liked} label={liked ? 'Curtido' : 'Curtir'} onPress={toggleLike} />

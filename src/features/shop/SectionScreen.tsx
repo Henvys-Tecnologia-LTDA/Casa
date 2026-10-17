@@ -11,9 +11,10 @@ import { Icon } from '@/ui/Icon';
 import { compartilhar } from '@/ui/share';
 import { Btn, Chip, Empty, IconBtn, Meter, Mini, Minis, Muted, Serif, useAccent } from '@/ui/kit';
 import { BackBar, Loading, Screen } from '@/ui/Screen';
-import { R } from '@/ui/theme';
+import { C, R } from '@/ui/theme';
 
 import { useSheets } from '../sheetsCtx';
+import { BotaoInspiracoes, inspDe, MuralInspiracoes } from './Inspiracoes';
 import { ItemList } from './ItemRow';
 
 type Filter = 'todos' | 'falta' | 'comprados' | 'coop';
@@ -60,7 +61,19 @@ export function SectionScreen({ id }: { id: string }) {
         ))}
       </ScrollView>
       <SecHead icon={s.icon || 'box'} title={s.name} sub={`${plural(st.count, 'item', 'itens')} · ${st.nb} ${st.nb === 1 ? 'comprado' : 'comprados'}`}
-        right={<Btn label={`Editar ${T.unit}`} kind="ghost" size="sm" icon="pencil" onPress={() => sheets.open({ kind: 'section', list, sec: s })} />} />
+        right={
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'flex-end' }}>
+            {list === 'casa' && !inspDe(d.t.inspirations, s.id).length ? <BotaoInspiracoes secId={s.id} /> : null}
+            <Btn label={`Editar ${T.unit}`} kind="ghost" size="sm" icon="pencil" onPress={() => sheets.open({ kind: 'section', list, sec: s })} />
+          </View>
+        } />
+      {s.measures ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: -6 }}>
+          <Icon name="ruler" size={14} color={C.muted} />
+          <Muted size={13}>{s.measures}</Muted>
+        </View>
+      ) : null}
+      {list === 'casa' ? <MuralInspiracoes secId={s.id} /> : null}
       <Minis>
         <Mini label="Planejado" value={money(st.total)} />
         <Mini label="Gasto" value={money(st.spent)} kind="ok" small={st.economy > 0.5 ? `economizaram ${money(st.economy)}` : undefined} />

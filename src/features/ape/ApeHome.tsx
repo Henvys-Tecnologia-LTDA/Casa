@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Linking, Pressable, ScrollView, View } from 'react-native';
 
 import { useData } from '@/data/DataProvider';
 import { aptsSorted, simulate, STATUS_L } from '@/lib/calc';
@@ -12,12 +12,14 @@ import { AppHeader, Appear, Loading, Screen } from '@/ui/Screen';
 import { C, F, R, soft } from '@/ui/theme';
 
 import { useSheets } from '../sheetsCtx';
+import { mapaUrl, TrabalhoCelula, useTrabalhos } from './Trabalho';
 
 export function ApeHome() {
   const d = useData();
   const sheets = useSheets();
   const list = aptsSorted(d.t.apartments);
   const active = list.filter(a => a.status !== 'descartado');
+  const comEndereco = active.map(a => (a.address || '').trim()).filter(Boolean);
   return (
     <Screen tab="ape" onFab={d.ready ? () => sheets.open({ kind: 'apt', apt: null }) : undefined} fabLabel="Novo apartamento">
       <AppHeader />
@@ -48,7 +50,13 @@ export function ApeHome() {
           )}
           {active.length >= 2 ? (
             <>
-              <ViewHead title="Comparação" sub="O menor valor de cada linha fica em verde." style={{ marginTop: 6 }} />
+              <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginTop: 6 }}>
+                <ViewHead title="Comparação" sub="O menor valor de cada linha fica em verde." style={{ flexShrink: 1 }} />
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  {comEndereco.length ? <Btn label="Ver no mapa" kind="ghost" size="sm" icon="map" onPress={() => Linking.openURL(mapaUrl(comEndereco))} /> : null}
+                  <Btn label="Trabalho" kind="ghost" size="sm" icon="mapPin" onPress={() => sheets.open({ kind: 'trabalho' })} />
+                </View>
+              </View>
               <CompareTable list={active} />
             </>
           ) : null}
@@ -148,6 +156,7 @@ function CompareTable({ list }: { list: Apartment[] }) {
   ];
   if (rd) rows.push(['Parcela / renda', ([, s]) => (s.firstFin / rd) * 100, pctTxt]);
   const colW = 130, firstW = 150;
+  const trabalhos = useTrabalhos();
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator style={{ borderWidth: 1, borderColor: C.line, borderRadius: R.card, backgroundColor: C.surface }}>
       <View>
@@ -172,6 +181,12 @@ function CompareTable({ list }: { list: Apartment[] }) {
             </View>
           );
         })}
+        {trabalhos.length ? (
+          <View style={{ flexDirection: 'row', borderTopWidth: 1, borderTopColor: C.line }}>
+            <View style={{ width: firstW, padding: 10 }}><Txt size={14} color={C.muted}>Até o trabalho</Txt></View>
+            {sims.map(([a]) => <View key={a.id} style={{ width: colW, padding: 10 }}><TrabalhoCelula address={a.address || ''} /></View>)}
+          </View>
+        ) : null}
       </View>
     </ScrollView>
   );

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 
 import { DataProvider } from '@/data/DataProvider';
 import { useSession } from '@/data/session';
+import { ShareBridge } from '@/features/compartilhar/ShareBridge';
 import { Marcos } from '@/features/marcos/Marcos';
 import { SearchHost } from '@/features/search/SearchHost';
 import { SheetsHost } from '@/features/SheetsHost';
@@ -24,6 +25,7 @@ export default function AppLayout() {
           <SearchHost>
             <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg }, animation: 'slide_from_right' }} />
           </SearchHost>
+          <ShareBridge />
         </SheetsHost>
         <Marcos />
       </DataProvider>

@@ -13,6 +13,8 @@ export interface ResumoWidget {
   tarefasLabel: string;
   /** Listas de compras visíveis e quantos itens faltam comprar em cada uma. */
   listas: { tab: ShopList; label: string; faltam: number }[];
+  /** Itens na lista do mercado (0 = nada; some do widget). */
+  mercado?: number;
   /** Quando os dados foram lidos (ISO). */
   em: string;
 }
@@ -40,7 +42,7 @@ export function faltamPorLista(sections: Pick<Section, 'id' | 'list'>[], items: 
 
 export function resumoWidget(
   hid: string,
-  t: Pick<DataTables, 'tasks' | 'items' | 'sections'>,
+  t: Pick<DataTables, 'tasks' | 'items' | 'sections'> & Partial<Pick<DataTables, 'groceries'>>,
   tabs: { label: (k: TabKey) => string; hidden: (k: TabKey) => boolean },
   agora: Date = new Date(),
 ): ResumoWidget {
@@ -50,6 +52,7 @@ export function resumoWidget(
     tarefas: tabs.hidden('mudanca') ? null : tarefasAbertas(t.tasks),
     tarefasLabel: tabs.label('mudanca'),
     listas: LISTAS.filter(l => !tabs.hidden(l)).map(l => ({ tab: l, label: tabs.label(l), faltam: n[l] })),
+    mercado: (t.groceries ?? []).filter(g => !g.done).length,
     em: agora.toISOString(),
   };
 }

@@ -6,6 +6,7 @@ import { useActions, useData } from '@/data/DataProvider';
 import { effective, hasPaid, optsOf, PARCELAS, qtyOf, SHOP } from '@/lib/calc';
 import { fmtInput, inputToYm, money, nextYm, normLink, parsePrice, rid, ymToInput } from '@/lib/format';
 import { lerLink, linkIn } from '@/lib/link';
+import { cabe, cabeTxt, cmInput, lerCm } from '@/lib/medidas';
 import type { Item, ItemOption, Phase, Priority, ShopList, Who } from '@/lib/types';
 import { MoneyField, MonthField, IntField } from '@/ui/fields';
 import { Icon } from '@/ui/Icon';
@@ -19,8 +20,11 @@ import { useToast } from '@/ui/Toast';
 
 interface OptDraft { id: string; name: string; store: string; priceStr: string; link: string; image: string; likes: string[]; picked: Picked | null }
 
-export function ItemEditorSheet({ item, secId, list, name: name0, onClose }: {
-  item: Item | null; secId?: string; list?: ShopList; name?: string; onClose: () => void;
+export function ItemEditorSheet({ item, secId, list, name: name0, pre, onClose }: {
+  item: Item | null; secId?: string; list?: ShopList; name?: string;
+  /** Já preenchido (ex.: o link compartilhado de outro app). */
+  pre?: Partial<Pick<Item, 'name' | 'price' | 'store' | 'link' | 'image'>>;
+  onClose: () => void;
 }) {
   const d = useData();
   const { insert, update, hid, me } = useActions();
@@ -29,9 +33,9 @@ export function ItemEditorSheet({ item, secId, list, name: name0, onClose }: {
   const confirm = useConfirm();
 
   const firstSec = item?.section_id || secId || d.secs(list || 'casa')[0]?.id || d.secs('casa')[0]?.id || d.secs('switch')[0]?.id || '';
-  const [name, setName] = useState(item?.name || name0 || '');
+  const [name, setName] = useState(item?.name || pre?.name || name0 || '');
   const [sec, setSec] = useState(firstSec);
-  const [price, setPrice] = useState(item ? fmtInput(item.price) : '');
+  const [price, setPrice] = useState(item ? fmtInput(item.price) : pre?.price ? fmtInput(pre.price) : '');
   const [qty, setQty] = useState(String(item ? qtyOf(item) : 1));
   const [prio, setPrio] = useState<Priority>(item?.priority || 'media');
   const [phase, setPhase] = useState<Phase>(item?.phase || '');
@@ -41,16 +45,21 @@ export function ItemEditorSheet({ item, secId, list, name: name0, onClose }: {
     image: o.image || '', likes: o.likes || [], picked: null,
   })));
   const [chosen, setChosen] = useState(item?.chosen || '');
-  const [store, setStore] = useState(item?.store || '');
-  const [link, setLink] = useState(item?.link || '');
+  const [store, setStore] = useState(item?.store || pre?.store || '');
+  const [link, setLink] = useState(item?.link || pre?.link || '');
   const [notes, setNotes] = useState(item?.notes || '');
+  const [larg, setLarg] = useState(cmInput(item?.width));
+  const [prof, setProf] = useState(cmInput(item?.depth));
+  const [alt, setAlt] = useState(cmInput(item?.height));
+  const [espaco, setEspaco] = useState(cmInput(item?.space));
+  const [medidas, setMedidas] = useState(!!(item?.width || item?.depth || item?.height || item?.space));
   const [bought, setBought] = useState(!!item?.bought);
   const [gift, setGift] = useState(!!item?.gift);
   const [paid, setPaid] = useState(item && hasPaid(item) ? fmtInput(item.paid) : '');
   const [payer, setPayer] = useState<Who>(item?.payer || '');
   const [parc, setParc] = useState(String(Number(item?.parcelas) || 1));
   const [parcStart, setParcStart] = useState(ymToInput(item?.parc_start || nextYm(item?.bought_at)));
-  const photo = usePhotoDraft(item?.image || '');
+  const photo = usePhotoDraft(item?.image || pre?.image || '');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -103,6 +112,8 @@ export function ItemEditorSheet({ item, secId, list, name: name0, onClose }: {
     } catch { setErr('Não deu para ler a área de transferência. Cole o link no campo.'); }
   }
 
+  const fitNow = cabe({ width: lerCm(larg) ?? 0, space: lerCm(espaco) ?? 0 });
+
   async function save() {
     if (busy) return;
     const nm = name.trim();
@@ -113,6 +124,8 @@ export function ItemEditorSheet({ item, secId, list, name: name0, onClose }: {
     const link0 = normLink(link);
     if (link.trim() && !link0 && !opts.length) { setErr('O link não parece um endereço de site. Cole o endereço completo da loja.'); return; }
     for (const o of opts) if (o.priceStr.trim() && parsePrice(o.priceStr) == null) { setErr(`Preço inválido na opção “${o.name || o.store || 'sem nome'}”.`); return; }
+    const dims = [larg, prof, alt, espaco].map(lerCm);
+    if (dims.some(v => v == null)) { setErr('Medida inválida. Use centímetros, como 220, ou metros, como 2,2 m.'); return; }
     const paidN = paid.trim() ? parsePrice(paid) : null;
     if (bought && !gift && paid.trim() && paidN == null) { setErr('Valor pago inválido. Escreva algo como 199,90.'); return; }
     setBusy(true); setErr('');
@@ -144,6 +157,7 @@ export function ItemEditorSheet({ item, secId, list, name: name0, onClose }: {
         bought_by: bought ? (changed ? me : old?.bought_by ?? null) : null,
         bought_at: bought ? (changed ? new Date().toISOString() : old?.bought_at ?? null) : null,
         estimado: !!(old?.estimado && priceN === Number(old.price)),
+        width: dims[0] ?? 0, depth: dims[1] ?? 0, height: dims[2] ?? 0, space: dims[3] ?? 0,
       };
       if (old) await update('items', old.id, data);
       else await insert('items', data);
@@ -256,7 +270,23 @@ export function ItemEditorSheet({ item, secId, list, name: name0, onClose }: {
             <Field label="Link do produto" value={link} onChangeText={setLink} placeholder="https://" autoCapitalize="none" keyboardType="url" />
           </Grid2>
         ) : null}
-        <Field label="Observações" value={notes} onChangeText={setNotes} placeholder="Medidas, cor, modelo, voltagem…" multiline />
+        <Field label="Observações" value={notes} onChangeText={setNotes} placeholder="Cor, modelo, voltagem…" multiline />
+        {medidas ? (
+          <View style={{ gap: 10, padding: 14, borderRadius: 14, backgroundColor: C.bg }}>
+            <Txt w="semibold" size={13.5}>Medidas (cm)</Txt>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Field label="Largura" value={larg} onChangeText={setLarg} keyboardType="decimal-pad" style={{ flex: 1 }} />
+              <Field label="Profund." value={prof} onChangeText={setProf} keyboardType="decimal-pad" style={{ flex: 1 }} />
+              <Field label="Altura" value={alt} onChangeText={setAlt} keyboardType="decimal-pad" style={{ flex: 1 }} />
+            </View>
+            <Field label="Largura do espaço onde vai ficar" value={espaco} onChangeText={setEspaco} keyboardType="decimal-pad" placeholder="Ex.: 210 ou 2,1 m" />
+            {fitNow ? <Txt w="semibold" size={13.5} color={fitNow.ok ? C.ok : C.hi}>{cabeTxt(fitNow)}</Txt> : <Muted size={12.5}>Com a largura do produto e a do espaço, o app diz se cabe.</Muted>}
+          </View>
+        ) : (
+          <View style={{ alignSelf: 'flex-start', marginTop: -4 }}>
+            <Btn label="Medidas (cabe?)" kind="ghost" size="sm" icon="ruler" onPress={() => setMedidas(true)} />
+          </View>
+        )}
 
         <Toggle label="Já compramos" value={bought} onChange={setBought} />
         {bought ? (

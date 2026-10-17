@@ -9,9 +9,9 @@ const sql = postgres(Deno.env.get('SUPABASE_DB_URL')!, { prepare: false });
 const SITE = 'https://casa-a-dois-pied.vercel.app';
 
 type Device = { kind: 'expo' | 'web'; endpoint: string; keys: { p256dh: string; auth: string } | null };
-type Ev = { tbl: string; label: string; link: string; extra: { amount?: number; status?: string; parent?: string } };
+type Ev = { tbl: string; label: string; link: string; extra: { amount?: number; status?: string; parent?: string; body?: string; emoji?: string } };
 type Batch = {
-  household: string; tab: string; tabLabel: string; kind: 'novo' | 'feito'; actor: string; events: Ev[]; devices: Device[];
+  household: string; tab: string; tabLabel: string; kind: 'novo' | 'feito' | 'comentario' | 'reacao'; actor: string; events: Ev[]; devices: Device[];
 };
 
 Deno.serve(async req => {
@@ -121,6 +121,10 @@ function one(who: string, kind: string, e: Ev) {
     case 'goals:novo': return `${who} criou a meta ${q(e.label)}`;
     case 'goal_deposits:feito':
       return amount < 0 ? `${who} tirou ${money(amount)} da meta ${q(e.label)}` : `${who} guardou ${money(amount)} na meta ${q(e.label)}`;
+    case 'comments:comentario': return `${who} comentou em ${q(e.label)}${e.extra.body ? `: ${q(e.extra.body)}` : ''}`;
+    case 'reactions:reacao': return `${who} reagiu ${e.extra.emoji ?? ''} a ${q(e.label)}`;
+    case 'bill_payments:feito': return `${who} pagou a conta ${q(e.label)}${amount ? ` (${money(amount)})` : ''}`;
+    case 'groceries:novo': return `${who} pôs ${q(e.label)} na lista do mercado`;
   }
   return `${who} mexeu em ${q(e.label)}`;
 }
@@ -137,6 +141,14 @@ function compose(b: Batch) {
   if (same.endsWith('_deposits')) {
     const total = ev.reduce((s, e) => s + (Number(e.extra.amount) || 0), 0);
     body = `${b.actor} fez ${ev.length} depósitos (${total < 0 ? 'menos ' : ''}${money(total)} no total)`;
+  } else if (b.kind === 'comentario') {
+    body = `${b.actor} comentou em ${names([...new Set(ev.map(e => e.label))])}`;
+  } else if (b.kind === 'reacao') {
+    body = `${b.actor} reagiu ${[...new Set(ev.map(e => e.extra.emoji ?? ''))].join('')} a ${names([...new Set(ev.map(e => e.label))])}`;
+  } else if (same === 'groceries') {
+    body = `${b.actor} pôs ${ev.length} itens na lista do mercado: ${names(ev.map(e => e.label))}`;
+  } else if (same === 'bill_payments') {
+    body = `${b.actor} pagou ${ev.length} contas: ${names(ev.map(e => e.label))}`;
   } else {
     const what = same ? NOUN[same] ?? 'coisas' : 'novidades';
     const verb = b.kind === 'novo' ? 'adicionou'

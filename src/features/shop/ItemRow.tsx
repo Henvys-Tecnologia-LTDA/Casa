@@ -3,6 +3,7 @@ import { Linking, Pressable, View } from 'react-native';
 import { useData } from '@/data/DataProvider';
 import { hasPaid, optsOf, PHASE, PRIO, qtyOf, spentOf, sub, thumbOf } from '@/lib/calc';
 import { hostOf, money, safeUrl } from '@/lib/format';
+import { cabe } from '@/lib/medidas';
 import type { Item } from '@/lib/types';
 import { Icon } from '@/ui/Icon';
 import { CheckBox, Muted, Pill, Tag, Txt, useAccent } from '@/ui/kit';
@@ -10,6 +11,7 @@ import { Photo } from '@/ui/Photo';
 import { Appear } from '@/ui/Screen';
 import { C } from '@/ui/theme';
 
+import { useComentarios } from '../conversa/Conversa';
 import { useSheets } from '../sheetsCtx';
 import { useShopOps } from './ops';
 
@@ -29,6 +31,8 @@ export function ItemRow({ item, showSection, first }: { item: Item; showSection?
   const under = item.bought && !item.gift && hasPaid(item) && Math.abs(Number(item.paid) - sub(item)) > 0.5 ? `previsto ${money(sub(item))}`
     : q > 1 && !item.bought ? `${q} × ${money(item.price)}` : '';
   const by = item.bought ? d.memberName(item.bought_by) : '';
+  const nCom = useComentarios(item.id);
+  const fit = item.bought ? null : cabe(item);
 
   return (
     <Pressable
@@ -50,6 +54,8 @@ export function ItemRow({ item, showSection, first }: { item: Item; showSection?
           {list === 'switch' && item.coop ? <Tag label="A dois" icon="users" /> : null}
           {opts.length > 1 && !item.chosen && !item.bought ? <Pill label={`${opts.length} opções`} kind="acc" /> : null}
           {item.gift && item.bought ? <Tag label="Presente" icon="gift" /> : null}
+          {fit && !fit.ok ? <Pill label="Não cabe" kind="alta" icon="ruler" /> : null}
+          {nCom ? <Tag label={String(nCom)} icon="chat" /> : null}
           {by ? <Txt w="semibold" size={13} color={C.ok}>por {by}</Txt> : null}
           {item.bought && d.whoLabel(item.payer) ? <Muted size={13}>pago: {d.whoLabel(item.payer)}</Muted> : null}
           {item.store && !item.bought ? <Muted size={13}>{item.store}</Muted> : null}

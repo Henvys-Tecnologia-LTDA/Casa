@@ -15,6 +15,7 @@ import { AppHeader, Appear, Loading, Screen } from '@/ui/Screen';
 import { compartilhar } from '@/ui/share';
 import { C, F, porTema, R, soft } from '@/ui/theme';
 
+import { AtalhoMercado } from '../mercado/MercadoScreen';
 import { useSheets } from '../sheetsCtx';
 import { ItemList } from './ItemRow';
 
@@ -35,6 +36,7 @@ export function ShopHome({ list }: { list: ShopList }) {
     <Screen tab={list} onFab={d.ready ? onFab : undefined} fabLabel="Novo item">
       <AppHeader />
       <ShopSummary list={list} />
+      {list === 'casa' && d.ready ? <AtalhoMercado /> : null}
       <SearchBar value={q} onChange={setQ} placeholder={`Buscar em ${d.tabLabel(list)}…`} />
       {!d.ready ? <Loading /> : q.trim() ? <SearchResults list={list} q={q.trim()} /> : (
         <>

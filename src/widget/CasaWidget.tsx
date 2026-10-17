@@ -76,6 +76,13 @@ function Tela({ r, c, height }: { r: ResumoWidget | null; c: Cores; height: numb
             <TextWidget text={l.faltam ? `faltam ${l.faltam}` : 'tudo comprado'} style={{ fontSize: 12.5, color: hex(c.muted) }} maxLines={1} />
           </FlexWidget>
         ))}
+        {r.mercado ? (
+          <FlexWidget clickAction="OPEN_URI" clickActionData={{ uri: 'casaadois://mercado' }} accessibilityLabel="Abrir o mercado"
+            style={{ flexDirection: 'row', alignItems: 'center', flexGap: 4 }}>
+            <TextWidget text="Mercado" style={{ fontSize: 12.5, fontWeight: '600', color: hex(c.ink) }} maxLines={1} />
+            <TextWidget text={`${r.mercado} ${r.mercado === 1 ? 'item' : 'itens'}`} style={{ fontSize: 12.5, color: hex(c.muted) }} maxLines={1} />
+          </FlexWidget>
+        ) : null}
       </FlexWidget>
     </FlexWidget>
   );

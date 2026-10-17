@@ -2,8 +2,9 @@ import type { ReactNode } from 'react';
 import { Linking, View } from 'react-native';
 
 import { useActions, useData } from '@/data/DataProvider';
-import { effective, hasPaid, optsOf, PARCELAS, PHASE, PRIO, qtyOf, spentOf, sub, thumbOf } from '@/lib/calc';
-import { dateBR, hostOf, money, safeUrl } from '@/lib/format';
+import { dueInfo, effective, hasPaid, optsOf, PARCELAS, PHASE, PRIO, qtyOf, spentOf, sub, thumbOf } from '@/lib/calc';
+import { dateBR, dayLabel, hostOf, money, safeUrl } from '@/lib/format';
+import { cabe, cabeTxt, cmInput, medidasTxt } from '@/lib/medidas';
 import type { ItemOption } from '@/lib/types';
 import { Icon } from '@/ui/Icon';
 import { AccentCtx, Btn, LikeBtn, Muted, Pill, Serif, Tag, Txt, useAccent } from '@/ui/kit';
@@ -12,6 +13,7 @@ import { Sheet, Spacer } from '@/ui/Sheet';
 import { ACCENT, C, R, soft } from '@/ui/theme';
 import { useToast } from '@/ui/Toast';
 
+import { Conversa } from '../conversa/Conversa';
 import { useSheets } from '../sheetsCtx';
 import { useShopOps } from './ops';
 import { PrecoNaLoja } from './PrecoNaLoja';
@@ -43,6 +45,8 @@ function Inner({ id, onClose, visible }: { id: string; onClose: () => void; visi
   const cheapest = effective(opts, '');
   const eco = it.bought && !it.gift && hasPaid(it) ? sub(it) - Number(it.paid) : 0;
   const by = d.memberName(it.bought_by);
+  const fit = cabe(it);
+  const garantia = dueInfo(it.warranty_until);
 
   const likeOpt = async (o: ItemOption) => {
     const on = o.likes?.includes(me);
@@ -150,7 +154,24 @@ function Inner({ id, onClose, visible }: { id: string; onClose: () => void; visi
         ) : null}
         {it.store ? <DetRow label="Loja"><Txt>{it.store}</Txt></DetRow> : null}
         {url ? <DetRow label="Produto"><Btn label={`Abrir em ${hostOf(url) || 'site'}`} kind="ghost" size="sm" icon="ext" onPress={() => Linking.openURL(url)} /></DetRow> : null}
+        {medidasTxt(it) ? (
+          <DetRow label="Medidas">
+            <View style={{ alignItems: 'flex-end', gap: 2 }}>
+              <Txt>{medidasTxt(it)}</Txt>
+              {fit ? <Txt w="semibold" size={13} color={fit.ok ? C.ok : C.hi}>{cabeTxt(fit)}{` (espaço de ${cmInput(it.space)} cm)`}</Txt> : null}
+            </View>
+          </DetRow>
+        ) : null}
+        {it.bought && (it.warranty_until || safeUrl(it.manual)) ? (
+          <DetRow label="Garantia">
+            <View style={{ alignItems: 'flex-end', gap: 6 }}>
+              {it.warranty_until ? <Txt color={garantia && garantia.days < 0 ? C.muted : C.ink}>{garantia && garantia.days < 0 ? `venceu em ${dayLabel(it.warranty_until, true)}` : `até ${dayLabel(it.warranty_until, true)}`}</Txt> : null}
+              {safeUrl(it.manual) ? <Btn label="Manual / nota" kind="ghost" size="xs" icon="ext" onPress={() => Linking.openURL(safeUrl(it.manual))} /> : null}
+            </View>
+          </DetRow>
+        ) : null}
       </View>
+      <Conversa target="items" id={it.id} />
     </Sheet>
   );
 }

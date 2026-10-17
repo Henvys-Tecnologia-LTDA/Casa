@@ -12,6 +12,7 @@ import { ACCENT, C, porTema, R, soft } from '@/ui/theme';
 
 import { useSheets } from '../sheetsCtx';
 import { AcertoPanel } from './AcertoPanel';
+import { ContasPanel } from './ContasPanel';
 import { GastosPanel } from './GastosPanel';
 
 const SRC_COLORS = porTema((): Record<string, string> => ({ casa: C.s1, switch: C.s2, ape: C.s3, viagem: C.s4 }));
@@ -42,6 +43,7 @@ export function MoneyScreen() {
       {!d.ready ? <Loading /> : (
         <>
           <AcertoPanel />
+          <ContasPanel />
           <ViewHead title="Metas do casal" sub="Juntem dinheiro para a entrada do apê, a reserva ou o que vier." />
           {goals.length ? (
             <View style={{ gap: 12 }}>

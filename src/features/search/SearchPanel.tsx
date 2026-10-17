@@ -162,6 +162,20 @@ export function SearchPanel({ onClose }: { onClose: () => void }) {
         break;
       }
       case 'atividade': router.push('/atividade'); break;
+      case 'mercado': router.push('/mercado'); break;
+      case 'caderno': router.push('/caderno'); break;
+      case 'nota': {
+        const note = d.t.notes.find(x => x.id === e.id);
+        router.push('/caderno');
+        if (note) sheets.open({ kind: 'note', note });
+        break;
+      }
+      case 'conta': {
+        const bill = d.t.bills.find(x => x.id === e.id);
+        router.navigate('/dinheiro');
+        if (bill) sheets.open({ kind: 'bill', bill });
+        break;
+      }
       case 'criar': create(e.id, query.slice(0, 120)); break;
     }
   };

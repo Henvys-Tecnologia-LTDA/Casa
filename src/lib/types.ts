@@ -19,6 +19,9 @@ export interface Household {
   renda: number;
   budget_casa: number;
   budget_switch: number;
+  /** Endereço do trabalho de cada um (tempo até o trabalho de cada apê). */
+  work_a: string;
+  work_b: string;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -49,6 +52,8 @@ export interface Section extends Timestamped {
   icon: string;
   sort_order: number;
   budget: number;
+  /** Anotações de medidas do cômodo ("parede da TV: 2,10 m"). */
+  measures: string;
 }
 
 export interface ItemOption {
@@ -84,6 +89,15 @@ export interface Item extends Timestamped {
   bought_by: string | null;
   bought_at: string | null;
   estimado: boolean;
+  /** Medidas do produto em cm (0 = não anotada). */
+  width: number;
+  depth: number;
+  height: number;
+  /** Largura do espaço onde vai ficar, em cm (para o "cabe?"). */
+  space: number;
+  warranty_until: string | null;
+  /** Link do manual ou da nota fiscal. */
+  manual: string;
 }
 
 export interface Task extends Timestamped {
@@ -95,7 +109,18 @@ export interface Task extends Timestamped {
   done: boolean;
   done_by: string | null;
   done_at: string | null;
+  /** No quadro: em andamento. */
+  doing: boolean;
+  steps: TaskStep[];
+  repeat: Repeat;
+  /** Reveza quem faz a cada vez (entre as duas pessoas). */
+  rotate: boolean;
+  last_done_at: string | null;
+  last_done_by: string | null;
 }
+
+export interface TaskStep { id: string; text: string; done: boolean }
+export type Repeat = '' | 'semana' | 'quinzena' | 'mes';
 
 export interface Apartment extends Timestamped {
   name: string;
@@ -183,6 +208,79 @@ export interface Settlement extends Base {
   by_user: string | null;
 }
 
+export interface Comment extends Base {
+  target_table: 'items' | 'tasks';
+  target_id: string;
+  body: string;
+  by_user: string | null;
+}
+
+export type Emoji = '❤️' | '😂' | '😮' | '👏' | '🙏';
+export interface Reaction extends Base {
+  /** Linha do "O que mudou" (private.push_events). */
+  event_id: number;
+  emoji: Emoji;
+  by_user: string | null;
+}
+
+export interface Inspiration extends Timestamped {
+  section_id: string;
+  image: string;
+  link: string;
+  note: string;
+  sort_order: number;
+}
+
+export type NoteKind = 'nota' | 'contato' | 'wifi';
+export interface Note extends Timestamped {
+  kind: NoteKind;
+  title: string;
+  body: string;
+  phone: string;
+  sort_order: number;
+}
+
+export interface Bill extends Timestamped {
+  name: string;
+  amount: number;
+  /** Dia do vencimento (31 em mês curto vira o último dia). */
+  due_day: number;
+  /** Quem costuma pagar. */
+  payer: Who;
+  active: boolean;
+}
+
+export interface BillPayment extends Base {
+  bill_id: string;
+  /** Mês pago (AAAA-MM). */
+  ym: string;
+  amount: number;
+  payer: Who;
+  by_user: string | null;
+}
+
+export type GroceryCat = 'hortifruti' | 'padaria' | 'acougue' | 'frios' | 'mercearia' | 'bebidas' | 'limpeza' | 'higiene' | 'congelados' | 'pet' | 'outros';
+export interface Grocery extends Timestamped {
+  text: string;
+  qty: string;
+  cat: GroceryCat;
+  done: boolean;
+  done_at: string | null;
+  by_user: string | null;
+}
+
+export interface TripPlan extends Timestamped {
+  trip_id: string;
+  /** Dia do roteiro (null = ainda sem dia). */
+  day: string | null;
+  /** Horário HH:MM (opcional). */
+  hour: string;
+  text: string;
+  link: string;
+  image: string;
+  sort_order: number;
+}
+
 export interface DataTables {
   sections: Section[];
   items: Item[];
@@ -195,6 +293,14 @@ export interface DataTables {
   goals: Goal[];
   goal_deposits: GoalDeposit[];
   settlements: Settlement[];
+  comments: Comment[];
+  reactions: Reaction[];
+  inspirations: Inspiration[];
+  notes: Note[];
+  bills: Bill[];
+  bill_payments: BillPayment[];
+  groceries: Grocery[];
+  trip_plans: TripPlan[];
 }
 
 export type TableName = keyof DataTables;
@@ -203,4 +309,5 @@ export type RowOf<T extends TableName> = DataTables[T][number];
 export const TABLES: TableName[] = [
   'sections', 'items', 'tasks', 'apartments', 'trips',
   'trip_costs', 'trip_deposits', 'packing_items', 'goals', 'goal_deposits', 'settlements',
+  'comments', 'reactions', 'inspirations', 'notes', 'bills', 'bill_payments', 'groceries', 'trip_plans',
 ];
