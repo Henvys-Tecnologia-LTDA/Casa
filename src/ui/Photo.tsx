@@ -1,6 +1,5 @@
 import { File } from 'expo-file-system';
 import { Image } from 'expo-image';
-import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useState } from 'react';
 import { Platform, View, type StyleProp, type ViewStyle } from 'react-native';
@@ -10,7 +9,12 @@ import { uuid } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 
 import { Icon } from './Icon';
+import { editPhoto, type EditOpts } from './PhotoEditor';
+import type { Picked } from './photoEdit';
+import { renderPhoto } from './photoRender';
 import { C } from './theme';
+
+export type { Picked };
 
 // Fotos ficam no bucket privado "photos", em "<casal>/<arquivo>.jpg".
 // Para mostrar, pedimos uma URL assinada (vale 1 hora) e guardamos em memória.
@@ -68,30 +72,26 @@ export function Photo({ path, style, icon = 'image', iconSize = 24, iconColor = 
   );
 }
 
-export interface Picked { uri: string; width: number; height: number }
-
-export async function pickImage(source: 'library' | 'camera' = 'library'): Promise<Picked | null> {
+// Escolhe da galeria (ou tira com a câmera) e abre o editor para cortar e girar.
+// Devolve null se a pessoa desistiu, no seletor ou no editor.
+export async function pickImage(source: 'library' | 'camera' = 'library', opts?: EditOpts): Promise<Picked | null> {
+  let r: ImagePicker.ImagePickerResult;
   if (source === 'camera') {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) throw new Error('Sem permissão para usar a câmera. Libere nas configurações do celular.');
-    const r = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.9 });
-    if (r.canceled || !r.assets?.[0]) return null;
-    const a = r.assets[0];
-    return { uri: a.uri, width: a.width, height: a.height };
+    r = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.9 });
+  } else {
+    r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.9 });
   }
-  const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.9 });
   if (r.canceled || !r.assets?.[0]) return null;
   const a = r.assets[0];
-  return { uri: a.uri, width: a.width, height: a.height };
+  return editPhoto({ uri: a.uri, width: a.width, height: a.height }, opts);
 }
 
-// Reduz para no máximo 1200 px, salva em JPEG e envia para a pasta do casal.
+// Envia para a pasta do casal. A foto que passou pelo editor já vem pronta (girada, cortada,
+// no máximo 1200 px, JPEG); as outras são reduzidas aqui.
 export async function uploadPhoto(hid: string, img: Picked): Promise<string> {
-  const ctx = ImageManipulator.manipulate(img.uri);
-  if (img.width >= img.height && img.width > 1200) ctx.resize({ width: 1200, height: null });
-  else if (img.height > img.width && img.height > 1200) ctx.resize({ width: null, height: 1200 });
-  const rendered = await ctx.renderAsync();
-  const out = await rendered.saveAsync({ format: SaveFormat.JPEG, compress: 0.82 });
+  const out = img.ready ? img : await renderPhoto(img);
   const body = Platform.OS === 'web'
     ? await (await fetch(out.uri)).arrayBuffer()
     : await new File(out.uri).arrayBuffer();

@@ -13,6 +13,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { SessionProvider } from '@/data/session';
+import { PhotoEditorProvider } from '@/ui/PhotoEditor';
 import { ConfirmProvider } from '@/ui/Sheet';
 import { Splash } from '@/ui/Splash';
 import { carregarTema, lembrarCaminho, PALETA, useTema } from '@/ui/theme';
@@ -52,8 +53,10 @@ export default function RootLayout() {
         <SessionProvider>
           <ToastProvider key={tema.versao}>
             <ConfirmProvider>
-              <StatusBar style={tema.escuro ? 'light' : 'dark'} />
-              <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: bg }, animation: 'fade' }} />
+              <PhotoEditorProvider>
+                <StatusBar style={tema.escuro ? 'light' : 'dark'} />
+                <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: bg }, animation: 'fade' }} />
+              </PhotoEditorProvider>
             </ConfirmProvider>
           </ToastProvider>
         </SessionProvider>

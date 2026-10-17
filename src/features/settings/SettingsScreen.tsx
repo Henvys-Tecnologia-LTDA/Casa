@@ -62,7 +62,8 @@ export function SettingsScreen() {
 
   async function changePhoto(source: 'library' | 'camera') {
     try {
-      const img = await pickImage(source);
+      // A foto do casal aparece num círculo: o editor já abre no quadrado, com o círculo marcado.
+      const img = await pickImage(source, { mode: 'quadrado', round: true });
       if (!img) return;
       setPhotoBusy(true);
       const old = h?.photo;
