@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 
 import { DataProvider } from '@/data/DataProvider';
 import { useSession } from '@/data/session';
+import { Marcos } from '@/features/marcos/Marcos';
+import { SearchHost } from '@/features/search/SearchHost';
 import { SheetsHost } from '@/features/SheetsHost';
 import { onPushOpen, refreshPush } from '@/lib/push';
 import { Splash } from '@/ui/Splash';
@@ -19,8 +21,11 @@ export default function AppLayout() {
       <PushBridge />
       <DataProvider key={currentId} hid={currentId}>
         <SheetsHost>
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg }, animation: 'slide_from_right' }} />
+          <SearchHost>
+            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg }, animation: 'slide_from_right' }} />
+          </SearchHost>
         </SheetsHost>
+        <Marcos />
       </DataProvider>
     </>
   );

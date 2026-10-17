@@ -5,7 +5,7 @@ import Svg, { Line, Path, Text as SvgText } from 'react-native-svg';
 import { money, moneyK } from '@/lib/format';
 
 import { Txt } from './kit';
-import { C, F } from './theme';
+import { alpha, C, F } from './theme';
 
 // Barras empilhadas (pagamento por ano do apê e parcelas por mês), como os gráficos SVG da página.
 // Tocar numa barra mostra o detalhe embaixo.
@@ -80,7 +80,7 @@ export function StackedBars({ bars, series, totalLabel, labelEvery }: { bars: Ba
       ) : <View style={{ height: 200 }} />}
       {cur ? (
         <View style={{ backgroundColor: C.ink, borderRadius: 10, padding: 11, gap: 3 }}>
-          <Txt w="semibold" size={13} color={C.bg}>{cur.title}{cur.subtitle ? <Txt size={13} color="rgba(251,241,239,0.7)">{`  ·  ${cur.subtitle}`}</Txt> : null}</Txt>
+          <Txt w="semibold" size={13} color={C.bg}>{cur.title}{cur.subtitle ? <Txt size={13} color={alpha(C.bg, 0.7)}>{`  ·  ${cur.subtitle}`}</Txt> : null}</Txt>
           {series.filter(s => (cur.parts[s.key] || 0) > 0).map(s => (
             <View key={s.key} style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 14 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -90,7 +90,7 @@ export function StackedBars({ bars, series, totalLabel, labelEvery }: { bars: Ba
               <Txt w="semibold" size={12.5} color={C.bg}>{money(cur.parts[s.key])}</Txt>
             </View>
           ))}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: 'rgba(251,241,239,0.3)', paddingTop: 4, marginTop: 2 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: alpha(C.bg, 0.3), paddingTop: 4, marginTop: 2 }}>
             <Txt size={12.5} color={C.bg}>{totalLabel}</Txt>
             <Txt w="semibold" size={12.5} color={C.bg}>{money(totals[sel!])}</Txt>
           </View>

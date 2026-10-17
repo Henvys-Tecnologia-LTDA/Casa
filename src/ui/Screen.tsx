@@ -6,6 +6,7 @@ import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useActions, useData } from '@/data/DataProvider';
+import { useSearch } from '@/features/search/searchCtx';
 
 import { Icon } from './Icon';
 import { AccentCtx, IconBtn, tap, Txt } from './kit';
@@ -24,8 +25,10 @@ export function Appear({ i = 0, children, style }: { i?: number; children?: Reac
   );
 }
 
-export function Screen({ tab, children, onFab, fabLabel, inTabs = true }: {
+export function Screen({ tab, children, onFab, fabLabel, inTabs = true, onRefresh }: {
   tab: TabKey; children: ReactNode; onFab?: () => void; fabLabel?: string; inTabs?: boolean;
+  /** "Puxar para atualizar" próprio da tela (o padrão recarrega os dados do casal). */
+  onRefresh?: () => Promise<void>;
 }) {
   const insets = useSafeAreaInsets();
   const { reload } = useActions();
@@ -47,7 +50,7 @@ export function Screen({ tab, children, onFab, fabLabel, inTabs = true }: {
               refreshing={refreshing}
               tintColor={accent}
               colors={[accent]}
-              onRefresh={async () => { setRefreshing(true); await reload(); setRefreshing(false); }}
+              onRefresh={async () => { setRefreshing(true); await (onRefresh ?? reload)(); setRefreshing(false); }}
             />
           }>
           {kids.map((c, k) => <Appear key={(c as { key?: string }).key ?? k} i={k} style={{ gap: 18 }}>{c}</Appear>)}
@@ -96,6 +99,7 @@ export function CoupleAvatar({ size = 48, onPress }: { size?: number; onPress?: 
 
 export function AppHeader() {
   const d = useData();
+  const search = useSearch();
   const status = d.status === 'ok' && d.ready ? 'ok' : d.status === 'offline' ? 'offline' : 'loading';
   const dot = status === 'ok' ? C.ok : status === 'offline' ? C.mid : C.muted;
   return (
@@ -106,9 +110,14 @@ export function AppHeader() {
           <Txt w="medium" size={11} color={C.coral} upper track={3} lines={1}>Planejamento a dois</Txt>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
             <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: dot }} />
-            <Txt size={11.5} color={C.muted}>{status === 'ok' ? 'Sincronizado' : status === 'offline' ? 'Sem conexão' : 'Conectando…'}</Txt>
+            <Txt size={11.5} color={C.muted} lines={1}>
+              {status === 'ok' ? 'Sincronizado' : status === 'offline' ? 'Sem conexão' : 'Conectando…'}
+              {d.fila ? ` · ${d.fila === 1 ? '1 mudança' : `${d.fila} mudanças`} para enviar` : ''}
+            </Txt>
           </View>
         </View>
+        <IconBtn icon="clock" label="O que mudou" onPress={() => router.push('/atividade')} />
+        <IconBtn icon="search" label="Buscar em tudo" onPress={search.open} />
         <IconBtn icon="sliders" label="Ajustes do casal" onPress={() => router.push('/ajustes')} />
       </View>
       <Text style={{ fontFamily: F.medium, fontSize: 31, lineHeight: 36, color: C.ink, letterSpacing: -1 }}>

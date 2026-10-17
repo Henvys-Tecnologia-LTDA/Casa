@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "casaadois",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "backgroundColor": "#FBF1EF",
     "ios": {
       "supportsTablet": true,
@@ -43,7 +43,11 @@
         {
           "backgroundColor": "#FBF1EF",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 120
+          "imageWidth": 120,
+          "dark": {
+            "image": "./assets/images/splash-icon-dark.png",
+            "backgroundColor": "#1C1715"
+          }
         }
       ],
       [
@@ -59,6 +63,25 @@
         {
           "photosPermission": "O app usa suas fotos para mostrar os itens, apês e viagens de vocês.",
           "cameraPermission": "O app usa a câmera para fotografar itens, apês e viagens."
+        }
+      ],
+      "expo-sharing",
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "Casa",
+              "label": "Casa a Dois",
+              "description": "Tarefas da semana e o que falta comprar",
+              "minWidth": "250dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 3600000
+            }
+          ]
         }
       ]
     ],

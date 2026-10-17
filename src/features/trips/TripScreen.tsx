@@ -3,6 +3,7 @@ import { Pressable, View } from 'react-native';
 
 import { useActions, useData } from '@/data/DataProvider';
 import { CAT, CATS, countdown, PACK_BASIC, tripCalc, TSTATUS_L } from '@/lib/calc';
+import { textoMala } from '@/lib/compartilhar';
 import { dateBR, dayLabel, money, parsePrice, plural } from '@/lib/format';
 import { Icon } from '@/ui/Icon';
 import { Btn, CheckBox, Empty, Field, IconBtn, LikeBtn, Meter, Mini, Minis, Muted, Panel, Pill, Serif, Txt } from '@/ui/kit';
@@ -10,13 +11,16 @@ import { Photo } from '@/ui/Photo';
 import { BackBar, Loading, Screen } from '@/ui/Screen';
 import { ACCENT, C, R, soft } from '@/ui/theme';
 import { useToast } from '@/ui/Toast';
+import { compartilhar } from '@/ui/share';
+import { useApagar } from '@/ui/useApagar';
 
 import { Badge } from '../ape/ApeHome';
 import { useSheets } from '../sheetsCtx';
 
 export function TripScreen({ id }: { id: string }) {
   const d = useData();
-  const { update, insert, remove, me } = useActions();
+  const { update, insert, me } = useActions();
+  const apagar = useApagar();
   const sheets = useSheets();
   const toast = useToast();
   const accent = ACCENT.viagem;
@@ -108,7 +112,7 @@ export function TripScreen({ id }: { id: string }) {
               const cat = CAT[x.cat] || CAT.outros, n = Number(x.parcelas) || 1;
               return (
                 <Pressable key={x.id} onPress={() => sheets.open({ kind: 'cost', tripId: t.id, cost: x })}
-                  style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, backgroundColor: pressed ? '#FBF0EC' : C.surface, borderTopWidth: k ? 1 : 0, borderTopColor: C.line })}>
+                  style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, backgroundColor: pressed ? C.pressed : C.surface, borderTopWidth: k ? 1 : 0, borderTopColor: C.line })}>
                   <CheckBox checked={x.paid} label={`Pago: ${x.descr}`} onChange={async v => {
                     try { await update('trip_costs', x.id, { paid: v }); if (v) toast('Custo pago', 'check'); } catch (e) { fail(e); }
                   }} />
@@ -149,7 +153,7 @@ export function TripScreen({ id }: { id: string }) {
                 <Muted size={13.5}>{`${dateBR(x.created_at)}${x.by_user ? ` · por ${d.memberName(x.by_user)}` : ''}`}</Muted>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Txt w="semibold" size={13.5} color={Number(x.amount) < 0 ? C.hi : C.ok}>{`${Number(x.amount) < 0 ? '−' : '+'} ${money(Math.abs(Number(x.amount) || 0))}`}</Txt>
-                  <IconBtn icon="x" size={26} label="Apagar este valor" onPress={async () => { try { await remove('trip_deposits', x.id); } catch (e) { fail(e); } }} />
+                  <IconBtn icon="x" size={26} label="Apagar este valor" onPress={async () => { try { await apagar('trip_deposits', x.id, 'Valor apagado do cofrinho'); } catch (e) { fail(e); } }} />
                 </View>
               </View>
             ))}
@@ -161,6 +165,7 @@ export function TripScreen({ id }: { id: string }) {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <Muted size={13}>{`${pkDone} de ${packing.length}`}</Muted>
           <Meter ratio={pkDone / packing.length} style={{ width: 80 }} />
+          {pkDone < packing.length ? <IconBtn icon="share" size={30} label="Mandar a mala no WhatsApp" onPress={() => compartilhar(textoMala(t.name, packing))} /> : null}
         </View>
       ) : undefined}>
         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-end' }}>
@@ -173,7 +178,7 @@ export function TripScreen({ id }: { id: string }) {
               <View key={p.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, paddingHorizontal: 12, borderTopWidth: k ? 1 : 0, borderTopColor: C.line, backgroundColor: C.surface }}>
                 <CheckBox checked={p.done} onChange={v => packToggle(p.id, v)} label={`Na mala: ${p.text}`} />
                 <Txt size={14.5} color={p.done ? C.muted : C.ink} style={[{ flex: 1 }, p.done ? { textDecorationLine: 'line-through' } : null]}>{p.text}</Txt>
-                <IconBtn icon="x" size={30} label={`Tirar ${p.text} da lista`} onPress={async () => { try { await remove('packing_items', p.id); } catch (e) { fail(e); } }} />
+                <IconBtn icon="x" size={30} label={`Tirar ${p.text} da lista`} onPress={async () => { try { await apagar('packing_items', p.id, `${p.text} saiu da mala`); } catch (e) { fail(e); } }} />
               </View>
             ))}
           </View>

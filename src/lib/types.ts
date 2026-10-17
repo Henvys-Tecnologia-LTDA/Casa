@@ -146,6 +146,8 @@ export interface TripCost extends Timestamped {
   parcelas: number;
   parc_start: string;
   paid: boolean;
+  /** Quem pagou (entra no acerto do casal quando já está pago). */
+  payer: Who;
 }
 
 export interface TripDeposit extends Base {
@@ -173,6 +175,14 @@ export interface GoalDeposit extends Base {
   by_user: string | null;
 }
 
+export interface Settlement extends Base {
+  /** Quem passou o dinheiro para o outro. */
+  payer: 'a' | 'b';
+  amount: number;
+  note: string;
+  by_user: string | null;
+}
+
 export interface DataTables {
   sections: Section[];
   items: Item[];
@@ -184,6 +194,7 @@ export interface DataTables {
   packing_items: PackingItem[];
   goals: Goal[];
   goal_deposits: GoalDeposit[];
+  settlements: Settlement[];
 }
 
 export type TableName = keyof DataTables;
@@ -191,5 +202,5 @@ export type RowOf<T extends TableName> = DataTables[T][number];
 
 export const TABLES: TableName[] = [
   'sections', 'items', 'tasks', 'apartments', 'trips',
-  'trip_costs', 'trip_deposits', 'packing_items', 'goals', 'goal_deposits',
+  'trip_costs', 'trip_deposits', 'packing_items', 'goals', 'goal_deposits', 'settlements',
 ];

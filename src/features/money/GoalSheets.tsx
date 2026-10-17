@@ -11,13 +11,15 @@ import { AccentCtx, Btn, ErrText, Field, Grid2, Hint, Seg } from '@/ui/kit';
 import { Sheet, Spacer, useConfirm } from '@/ui/Sheet';
 import { ACCENT } from '@/ui/theme';
 import { useToast } from '@/ui/Toast';
+import { useApagar } from '@/ui/useApagar';
 
-export function GoalSheet({ goal, onClose }: { goal: Goal | null; onClose: () => void }) {
+export function GoalSheet({ goal, name: name0, onClose }: { goal: Goal | null; name?: string; onClose: () => void }) {
   const d = useData();
-  const { insert, update, remove } = useActions();
+  const { insert, update } = useActions();
+  const apagar = useApagar();
   const toast = useToast();
   const confirm = useConfirm();
-  const [name, setName] = useState(goal?.name || '');
+  const [name, setName] = useState(goal?.name || name0 || '');
   const [target, setTarget] = useState(goal?.target ? fmtInput(goal.target) : '');
   const [deadline, setDeadline] = useState(ymToInput(goal?.deadline || ''));
   const [err, setErr] = useState('');
@@ -46,7 +48,7 @@ export function GoalSheet({ goal, onClose }: { goal: Goal | null; onClose: () =>
     if (!goal) return;
     const ok = await confirm({ title: `Excluir a meta “${goal.name}”?`, text: 'O histórico de valores guardados nela também some.', yes: 'Excluir meta' });
     if (!ok) return;
-    try { await remove('goals', goal.id); onClose(); toast('Meta excluída', 'trash'); } catch (e: any) { setErr(e?.message || ''); }
+    try { await apagar('goals', goal.id, 'Meta excluída'); onClose(); } catch (e: any) { setErr(e?.message || ''); }
   }
 
   return (

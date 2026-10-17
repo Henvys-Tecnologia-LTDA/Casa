@@ -45,7 +45,7 @@ function TabBar({ state, navigation }: BottomTabBarProps) {
   return (
     <View style={{
       backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.line, paddingTop: 6, paddingHorizontal: 6, paddingBottom: 6 + insets.bottom,
-      shadowColor: '#2A2320', shadowOpacity: 0.06, shadowRadius: 12, shadowOffset: { width: 0, height: -4 }, elevation: 8,
+      shadowColor: C.shadow, shadowOpacity: 0.06, shadowRadius: 12, shadowOffset: { width: 0, height: -4 }, elevation: 8,
     }}>
       <View onLayout={e => setW(e.nativeEvent.layout.width)} style={{ flexDirection: 'row' }}>
         {tabW > 0 ? (

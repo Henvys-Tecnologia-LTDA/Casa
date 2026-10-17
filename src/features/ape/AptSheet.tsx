@@ -13,11 +13,13 @@ import { PhotoZone, usePhotoDraft } from '@/ui/PhotoZone';
 import { Sheet, Spacer, useConfirm } from '@/ui/Sheet';
 import { ACCENT, C, soft } from '@/ui/theme';
 import { useToast } from '@/ui/Toast';
+import { useApagar } from '@/ui/useApagar';
 
 // Editor do apartamento + simulação ao vivo (aptDlg da página).
 export function AptSheet({ apt, onClose }: { apt: Apartment | null; onClose: () => void }) {
   const d = useData();
-  const { insert, update, remove, hid } = useActions();
+  const { insert, update, hid } = useActions();
+  const apagar = useApagar();
   const toast = useToast();
   const confirm = useConfirm();
   const a = apt;
@@ -80,11 +82,9 @@ export function AptSheet({ apt, onClose }: { apt: Apartment | null; onClose: () 
     const ok = await confirm({ title: `Excluir ${a.name || 'este apartamento'}?`, text: 'A simulação e a foto saem da lista de vocês dois.', yes: 'Excluir apartamento' });
     if (!ok) return;
     try {
-      await remove('apartments', a.id);
-      deletePhotos([a.image]);
+      await apagar('apartments', a.id, 'Apartamento excluído', [a.image]);
       onClose();
       if (router.canGoBack()) router.back();
-      toast('Apartamento excluído', 'trash');
     } catch (e: any) { setErr(e?.message || 'Não foi possível excluir.'); }
   }
 

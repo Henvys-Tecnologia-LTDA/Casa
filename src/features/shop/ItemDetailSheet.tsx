@@ -14,6 +14,7 @@ import { useToast } from '@/ui/Toast';
 
 import { useSheets } from '../sheetsCtx';
 import { useShopOps } from './ops';
+import { PrecoNaLoja } from './PrecoNaLoja';
 
 export function ItemDetailSheet({ id, onClose }: { id: string; onClose: () => void }) {
   const d = useData();
@@ -94,6 +95,7 @@ function Inner({ id, onClose, visible }: { id: string; onClose: () => void; visi
         </View>
         {!it.bought && sub(it) > 0 ? <Muted>{`ou ${PARCELAS}× de ${money(sub(it) / PARCELAS)}${it.estimado ? ' · preço estimado' : ''}`}</Muted> : null}
       </View>
+      {!it.bought && url ? <PrecoNaLoja itemId={it.id} anotado={Number(it.price) || 0} /> : null}
       {it.notes ? <View style={{ padding: 12, borderRadius: 10, backgroundColor: C.bg }}><Txt size={14.5}>{it.notes}</Txt></View> : null}
 
       {opts.length ? (

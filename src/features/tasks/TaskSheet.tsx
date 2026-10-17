@@ -8,10 +8,12 @@ import { AccentCtx, Btn, ErrText, Field, Seg, Toggle } from '@/ui/kit';
 import { Sheet, Spacer, useConfirm } from '@/ui/Sheet';
 import { ACCENT } from '@/ui/theme';
 import { useToast } from '@/ui/Toast';
+import { useApagar } from '@/ui/useApagar';
 
 export function TaskSheet({ task, onClose }: { task: Task | null; onClose: () => void }) {
   const d = useData();
-  const { insert, update, remove, me } = useActions();
+  const { insert, update, me } = useActions();
+  const apagar = useApagar();
   const toast = useToast();
   const confirm = useConfirm();
   const [title, setTitle] = useState(task?.title || '');
@@ -46,7 +48,7 @@ export function TaskSheet({ task, onClose }: { task: Task | null; onClose: () =>
     if (!task) return;
     const ok = await confirm({ title: `Excluir “${task.title}”?`, text: 'A tarefa sai da lista de vocês dois.', yes: 'Excluir tarefa' });
     if (!ok) return;
-    try { await remove('tasks', task.id); onClose(); toast('Tarefa excluída', 'trash'); } catch (e: any) { setErr(e?.message || ''); }
+    try { await apagar('tasks', task.id, 'Tarefa excluída'); onClose(); } catch (e: any) { setErr(e?.message || ''); }
   }
 
   return (

@@ -4,7 +4,7 @@ import {
   addM, daysUntil, diffM, money, nextYm, validYm, ymOf,
 } from './format';
 import type {
-  Apartment, Goal, GoalDeposit, Item, ItemOption, PackingItem, Section, ShopList, Trip, TripCost, TripDeposit,
+  Apartment, Goal, GoalDeposit, Item, ItemOption, PackingItem, Section, Settlement, ShopList, Task, Trip, TripCost, TripDeposit,
 } from './types';
 
 export const PARCELAS = 10;
@@ -80,6 +80,30 @@ export function balance(items: Item[]) {
     else if (i.payer === 'ambos') { a += v / 2; b += v / 2; } else none += v;
   }
   return { a, b, none, diff: (a - b) / 2 };
+}
+
+/**
+ * Acerto do casal (como o Splitwise): junta as compras e os custos de viagem pagos, com "quem pagou", e desconta
+ * os acertos já feitos. diff > 0: a pessoa B passa diff para A; diff < 0: A passa para B.
+ */
+export function acerto(items: Item[], settlements: Settlement[], costs: TripCost[] = []) {
+  const base = balance(items);
+  // Custos de viagem já pagos contam como as compras ("os dois" = metade para cada).
+  for (const c of costs) {
+    if (!c.paid) continue;
+    const v = Number(c.amount) || 0;
+    if (c.payer === 'a') base.a += v;
+    else if (c.payer === 'b') base.b += v;
+    else if (c.payer === 'ambos') { base.a += v / 2; base.b += v / 2; } else base.none += v;
+  }
+  base.diff = (base.a - base.b) / 2;
+  let deA = 0, deB = 0; // o que cada um já passou para o outro
+  for (const s of settlements) {
+    const v = Number(s.amount) || 0;
+    if (s.payer === 'a') deA += v; else deB += v;
+  }
+  // Quando B passa X para A, a dívida de B diminui X (e vice-versa).
+  return { ...base, deA, deB, diff: base.diff - deB + deA };
 }
 
 export const byPrio = (a: Item, b: Item) => (PRIO[a.priority]?.rank ?? 1) - (PRIO[b.priority]?.rank ?? 1) || sub(b) - sub(a);
@@ -302,4 +326,43 @@ export function dueInfo(due: string | null | undefined) {
     : days <= 30 ? `em ${days} dias` : `${String(d).padStart(2, '0')} de ${MONTHS_SHORT[m - 1]}`;
   const cls: 'alta' | 'media' | 'baixa' = days < 0 ? 'alta' : days <= 3 ? 'media' : 'baixa';
   return { days, label, cls };
+}
+
+/** Agenda da mudança (como o "Hoje" do Todoist): tarefas abertas com prazo vencido, de hoje e dos próximos 7 dias. */
+export function agenda(tasks: Task[]) {
+  const open = tasks
+    .filter(t => !t.done && t.due)
+    .map(t => ({ t, days: daysUntil(t.due) }))
+    .filter((x): x is { t: Task; days: number } => x.days != null);
+  const by = (a: { t: Task; days: number }, b: { t: Task; days: number }) => a.days - b.days || a.t.title.localeCompare(b.t.title);
+  return {
+    atrasadas: open.filter(x => x.days < 0).sort(by).map(x => x.t),
+    hoje: open.filter(x => x.days === 0).sort(by).map(x => x.t),
+    semana: open.filter(x => x.days > 0 && x.days <= 7).sort(by).map(x => x.t),
+  };
+}
+
+/**
+ * Gastos do mês (como o Mobills e o Organizze): compras feitas em cada um dos últimos meses, pelo mês
+ * da compra (o valor cheio, mesmo parcelado; as parcelas ficam no calendário), por lista e por cômodo.
+ */
+export function gastosPorMes(items: Item[], sections: Section[], meses = 6, agora: number | Date = Date.now()) {
+  const fim = ymOf(agora);
+  const secs = new Map(sections.map(s => [s.id, s]));
+  const out = Array.from({ length: meses }, (_, k) => ({
+    ym: addM(fim, k - meses + 1), total: 0, porLista: { casa: 0, switch: 0 } as Record<ShopList, number>, porSecao: {} as Record<string, number>,
+  }));
+  const idx = new Map(out.map((m, k) => [m.ym, k]));
+  for (const i of items) {
+    if (!i.bought || i.gift) continue;
+    const s = secs.get(i.section_id);
+    const k = idx.get(ymOf(i.bought_at ?? i.updated_at));
+    if (!s || k == null) continue;
+    const v = spentOf(i);
+    const m = out[k];
+    m.total += v;
+    m.porLista[s.list] += v;
+    m.porSecao[s.id] = (m.porSecao[s.id] || 0) + v;
+  }
+  return out;
 }

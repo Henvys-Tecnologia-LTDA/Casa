@@ -11,6 +11,8 @@ import { AppHeader, Appear, Loading, Screen } from '@/ui/Screen';
 import { ACCENT, C, R, soft } from '@/ui/theme';
 
 import { useSheets } from '../sheetsCtx';
+import { AcertoPanel } from './AcertoPanel';
+import { GastosPanel } from './GastosPanel';
 
 const SRC_COLORS: Record<string, string> = { casa: C.s1, switch: C.s2, ape: C.s3, viagem: C.s4 };
 
@@ -39,6 +41,7 @@ export function MoneyScreen() {
       ] : ['Parcelas este mês', 'Próximos 12 meses', 'Guardado nas metas', 'Falta para as metas'].map(l => ({ label: l, value: '—' }))} />
       {!d.ready ? <Loading /> : (
         <>
+          <AcertoPanel />
           <ViewHead title="Metas do casal" sub="Juntem dinheiro para a entrada do apê, a reserva ou o que vier." />
           {goals.length ? (
             <View style={{ gap: 12 }}>
@@ -54,6 +57,7 @@ export function MoneyScreen() {
               action={<Btn label="Criar meta" icon="plus" onPress={() => sheets.open({ kind: 'goal', goal: null })} />} />
           )}
 
+          <GastosPanel />
           <ViewHead title="Calendário de parcelas" sub="Próximos 12 meses: compras parceladas, custos de viagem e o apê favorito." style={{ marginTop: 6 }} />
           {d.fav && !validYm(d.fav.inicio_mes) ? <Note>O apê favorito entra aqui quando vocês marcarem o mês do primeiro pagamento na simulação dele.</Note> : null}
           {!any ? (

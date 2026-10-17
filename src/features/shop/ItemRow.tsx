@@ -35,7 +35,7 @@ export function ItemRow({ item, showSection, first }: { item: Item; showSection?
       onPress={() => sheets.open({ kind: 'detail', id: item.id })}
       style={({ pressed }) => ({
         flexDirection: 'row', gap: 12, padding: 12, alignItems: 'flex-start',
-        backgroundColor: pressed ? '#FBF0EC' : C.surface, borderTopWidth: first ? 0 : 1, borderTopColor: C.line,
+        backgroundColor: pressed ? C.pressed : C.surface, borderTopWidth: first ? 0 : 1, borderTopColor: C.line,
       })}>
       <View style={{ paddingTop: 14 }}>
         <CheckBox checked={item.bought} onChange={v => setBought(item, v)} label={`Comprado: ${item.name}`} />

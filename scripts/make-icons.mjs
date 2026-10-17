@@ -19,6 +19,8 @@ try {
 
 const BG = '#FBF1EF';
 const INK = '#2A2320';
+// No modo escuro, o traço da casa fica claro (a tinta da paleta escura de src/ui/theme.ts).
+const INK_ESCURO = '#F3E9E5';
 const marca = readFileSync(new URL('../assets/brand/marca.svg', import.meta.url), 'utf8')
   .replace(/<!--[\s\S]*?-->/g, '').replace(/\n\s*\n/g, '\n');
 const out = file => {
@@ -29,10 +31,11 @@ const out = file => {
 
 // A marca (traço incluso) ocupa ~85% da caixa 24x24 e cabe num círculo de 95% da meia caixa.
 // box: lado da caixa em fração da imagem · color: pinta tudo de uma cor · stroke: traço mais grosso
-// para tamanhos pequenos · tile: fundo cor de papel (radius em fração do lado).
-function svg(size, { box, color, stroke, tile, radius = 0 }) {
+// para tamanhos pequenos · tile: fundo cor de papel (radius em fração do lado) · ink: troca só a tinta.
+function svg(size, { box, color, stroke, tile, radius = 0, ink }) {
   let m = marca;
   if (color) m = m.replace(/stroke="#[0-9A-Fa-f]{6}"/g, `stroke="${color}"`);
+  if (ink) m = m.split(`stroke="${INK}"`).join(`stroke="${ink}"`);
   if (stroke) m = m.replace(/stroke-width="[\d.]+"/, `stroke-width="${stroke}"`);
   const side = size * box, off = (size - side) / 2;
   m = m.replace('<svg ', `<svg x="${off}" y="${off}" width="${side}" height="${side}" `);
@@ -49,6 +52,7 @@ const ASSETS = [
   { file: 'assets/images/android-icon-monochrome.png', size: 1024, box: 0.54, color: INK },
   // Splash: fundo vem do plugin expo-splash-screen; a imagem é exibida com imageWidth.
   { file: 'assets/images/splash-icon.png', size: 1024, box: 1 },
+  { file: 'assets/images/splash-icon-dark.png', size: 1024, box: 1, ink: INK_ESCURO },
   // Ícone pequeno dos avisos no Android (barra de status): silhueta branca; o sistema pinta com a cor do plugin.
   { file: 'assets/images/notification-icon.png', size: 96, box: 0.96, color: '#FFFFFF', stroke: 1.8 },
   // Favicon: com fundo, para não sumir em aba escura; traço mais grosso para 16–48 px.
@@ -70,4 +74,5 @@ for (const a of ASSETS) {
 
 // A casinha que aparece no public/index.html enquanto o JS carrega.
 writeFileSync(out('public/marca.svg'), marca);
-console.log('public/marca.svg');
+writeFileSync(out('public/marca-escura.svg'), marca.split(`stroke="${INK}"`).join(`stroke="${INK_ESCURO}"`));
+console.log('public/marca.svg, public/marca-escura.svg');

@@ -4,6 +4,9 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 
 import { disablePush } from '@/lib/push';
 import { supabase } from '@/lib/supabase';
+import { atualizarWidget } from '@/widget/atualizar';
+
+import { clearOffline } from './offline';
 
 // Sessão do usuário (Supabase Auth) e qual casal está aberto no aparelho.
 
@@ -101,6 +104,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     await disablePush().catch(() => {});
+    await clearOffline(); // a cópia dos dados e a fila não ficam no aparelho
+    atualizarWidget(null); // e o widget do Android volta a pedir para entrar
     await supabase.auth.signOut().catch(() => {});
     await AsyncStorage.removeItem(KEY).catch(() => {});
     setCurrent(null);

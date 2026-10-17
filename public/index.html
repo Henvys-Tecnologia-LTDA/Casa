@@ -11,6 +11,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Casa a Dois" />
+    <meta name="theme-color" content="#1C1715" media="(prefers-color-scheme: dark)" />
+    <meta name="color-scheme" content="light dark" />
     <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
     <style id="expo-reset">
       /* These styles make the body full-height */
@@ -31,6 +33,12 @@
         flex: 1;
       }
       /* Casinha enquanto o JS carrega, no mesmo lugar da tela de carregamento do app (src/ui/Splash.tsx). */
+      /* Modo escuro (src/ui/theme.ts): fundo de papel escuro antes do JS. */
+      @media (prefers-color-scheme: dark) {
+        body {
+          background-color: #1C1715;
+        }
+      }
       #carregando {
         flex: 1;
         display: flex;
@@ -46,6 +54,6 @@
       You need to enable JavaScript to run this app.
     </noscript>
     <!-- The root element for your Expo app. O React troca o conteúdo ao montar. -->
-    <div id="root"><div id="carregando"><img src="/marca.svg" width="120" height="120" alt="" /></div></div>
+    <div id="root"><div id="carregando"><picture><source srcset="/marca-escura.svg" media="(prefers-color-scheme: dark)" /><img src="/marca.svg" width="120" height="120" alt="" /></picture></div></div>
   </body>
 </html>

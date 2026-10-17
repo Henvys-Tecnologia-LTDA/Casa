@@ -9,21 +9,22 @@ import type { Section, ShopList } from '@/lib/types';
 import { MoneyField } from '@/ui/fields';
 import { Icon } from '@/ui/Icon';
 import { AccentCtx, Btn, ErrText, Field, Txt } from '@/ui/kit';
-import { deletePhotos } from '@/ui/Photo';
+import { useApagar } from '@/ui/useApagar';
 import { Sheet, Spacer, useConfirm } from '@/ui/Sheet';
 import { ACCENT, C, R, soft } from '@/ui/theme';
 import { useToast } from '@/ui/Toast';
 
 // Novo cômodo / seção, teto de gastos e ícone (secDlg da página).
-export function SectionSheet({ list, sec, onClose }: { list: ShopList; sec: Section | null; onClose: () => void }) {
+export function SectionSheet({ list, sec, name: name0, onClose }: { list: ShopList; sec: Section | null; name?: string; onClose: () => void }) {
   const d = useData();
-  const { insert, update, remove } = useActions();
+  const { insert, update } = useActions();
+  const apagar = useApagar();
   const toast = useToast();
   const confirm = useConfirm();
   const L = sec?.list || list;
   const T = TABS[L];
   const accent = ACCENT[L];
-  const [name, setName] = useState(sec?.name || '');
+  const [name, setName] = useState(sec?.name || name0 || '');
   const [budget, setBudget] = useState(Number(sec?.budget) ? fmtInput(sec?.budget) : '');
   const [icon, setIcon] = useState(ICONS.some(([k]) => k === sec?.icon) ? sec!.icon : T.defIcon);
   const [err, setErr] = useState('');
@@ -59,17 +60,16 @@ export function SectionSheet({ list, sec, onClose }: { list: ShopList; sec: Sect
     const its = d.itemsOf(sec.id);
     const ok = await confirm({
       title: `Excluir ${sec.name}?`,
-      text: its.length ? `${plural(its.length, 'item', 'itens')} deste ${T.unit} também ${its.length === 1 ? 'será apagado' : 'serão apagados'}. Isso não pode ser desfeito.` : 'Isso não pode ser desfeito.',
+      text: its.length ? `${plural(its.length, 'item', 'itens')} deste ${T.unit} também ${its.length === 1 ? 'será apagado' : 'serão apagados'}. Dá para desfazer logo depois.` : 'Dá para desfazer logo depois.',
       yes: `Excluir ${T.unit}`,
     });
     if (!ok) return;
     setBusy(true);
     try {
-      await remove('sections', sec.id); // os itens saem junto (on delete cascade)
-      deletePhotos(its.flatMap(it => [it.image, ...optsOf(it).map(o => o.image)]));
+      // Os itens saem junto (on delete cascade) e voltam juntos no desfazer.
+      await apagar('sections', sec.id, `${sec.name} excluído`, its.flatMap(it => [it.image, ...optsOf(it).map(o => o.image)]));
       onClose();
       if (router.canGoBack()) router.back();
-      toast(`${sec.name} excluído`, 'trash');
     } catch (e: any) {
       setErr(e?.message || 'Não foi possível excluir.');
     } finally {

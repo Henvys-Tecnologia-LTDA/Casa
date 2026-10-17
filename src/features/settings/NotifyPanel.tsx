@@ -11,7 +11,9 @@ import { ACCENT, C, soft } from '@/ui/theme';
 import { useToast } from '@/ui/Toast';
 
 // O que cada aba avisa: "novo" (adicionou) e "feito" (comprou, concluiu, mudou de status, depositou).
-// Tem que bater com os gatilhos de supabase/migrations/*_push_notifications.sql.
+// Tem que bater com os gatilhos de supabase/migrations/*_push_notifications.sql. A Mudança tem ainda o
+// "lembrete" das 9h com as tarefas de hoje e atrasadas, e Casa/Console o "baixou de preço" dos itens com
+// link (supabase/functions/lembretes).
 const KINDS: Record<TabKey, { novo: string; feito: string }> = {
   casa: { novo: 'Itens novos', feito: 'Comprados' },
   switch: { novo: 'Itens novos', feito: 'Comprados' },
@@ -73,6 +75,12 @@ export function NotifyPanel() {
                 {(['novo', 'feito'] as const).map(kind => (
                   <Chip key={kind} label={KINDS[k][kind]} on={!off.has(`${k}:${kind}`)} onPress={() => flip(`${k}:${kind}`)} />
                 ))}
+                {k === 'casa' || k === 'switch' ? (
+                  <Chip label="Baixou de preço" on={!off.has(`${k}:preco`)} onPress={() => flip(`${k}:preco`)} />
+                ) : null}
+                {k === 'mudanca' ? (
+                  <Chip label="Lembrete das 9h" on={!off.has('mudanca:lembrete')} onPress={() => flip('mudanca:lembrete')} />
+                ) : null}
               </View>
             </View>
           </View>

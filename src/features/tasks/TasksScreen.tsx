@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { useActions, useData } from '@/data/DataProvider';
-import { dueInfo, PHASE, PHASES } from '@/lib/calc';
+import { agenda, dueInfo, PHASE, PHASES } from '@/lib/calc';
+import { textoTarefas } from '@/lib/compartilhar';
 import { intFmt, pctTxt } from '@/lib/format';
 import type { Phase, Task } from '@/lib/types';
 import { Icon } from '@/ui/Icon';
 import { Btn, CheckBox, Chip, Empty, Field, Meter, Muted, Pill, Summary, Tag, Txt, useAccent, ViewHead } from '@/ui/kit';
 import { AppHeader, Loading, Screen } from '@/ui/Screen';
+import { compartilhar } from '@/ui/share';
 import { C, R } from '@/ui/theme';
 import { useToast } from '@/ui/Toast';
 
@@ -49,7 +51,10 @@ export function TasksScreen() {
       ]} />
       {!d.ready ? <Loading /> : (
         <>
-          <ViewHead title="Checklist da mudança" sub="Tudo o que não é compra, mas precisa ser feito." />
+          <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+            <ViewHead title="Checklist da mudança" sub="Tudo o que não é compra, mas precisa ser feito." style={{ flexShrink: 1 }} />
+            {tot - done > 0 ? <Btn label="Mandar" kind="ghost" size="sm" icon="share" onPress={() => compartilhar(textoTarefas(d.tabLabel('mudanca'), tasks))} /> : null}
+          </View>
           <View style={{ gap: 8 }}>
             <View style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-end' }}>
               <Field value={title} onChangeText={setTitle} placeholder="Nova tarefa…" onSubmit={quickAdd} style={{ flex: 1 }} />
@@ -60,6 +65,7 @@ export function TasksScreen() {
             </View>
           </View>
           {!tasks.length ? <Empty icon="truck" title="Nenhuma tarefa ainda" text="Escrevam acima a primeira coisa que precisam resolver para a mudança." /> : null}
+          <Agenda tasks={tasks} />
           {groups.map(([k, t]) => {
             const ts = tasks.filter(x => (PHASE[x.phase] ? x.phase : '') === k)
               .sort((a, b) => Number(a.done) - Number(b.done) || (dueInfo(a.due)?.days ?? 9999) - (dueInfo(b.due)?.days ?? 9999) || String(a.created_at).localeCompare(String(b.created_at)));
@@ -77,6 +83,33 @@ export function TasksScreen() {
         </>
       )}
     </Screen>
+  );
+}
+
+// O que tem prazo agora, antes das etapas. Às 9h quem tem avisos ligados recebe o lembrete do dia.
+function Agenda({ tasks }: { tasks: Task[] }) {
+  const accent = useAccent();
+  const ag = agenda(tasks);
+  const parts: [string, Task[], string, string][] = [
+    ['Atrasadas', ag.atrasadas, 'alert', C.hi], ['Hoje', ag.hoje, 'calendar', accent], ['Próximos 7 dias', ag.semana, 'calendar', C.muted],
+  ];
+  if (!parts.some(p => p[1].length)) return null;
+  return (
+    <View style={{ gap: 12, marginTop: 4 }}>
+      <ViewHead title="Agenda" sub="O que tem prazo agora. Às 9h, quem ligou os avisos recebe o lembrete do dia." />
+      {parts.map(([title, ts, icon, color]) => (ts.length ? (
+        <View key={title} style={{ gap: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Icon name={icon} size={16} color={color} />
+            <Txt w="medium" size={15.5} color={title === 'Atrasadas' ? C.hi : C.ink}>{title}</Txt>
+            <Muted size={13}>{String(ts.length)}</Muted>
+          </View>
+          <View style={{ backgroundColor: C.surface, borderWidth: 1, borderColor: title === 'Atrasadas' ? C.hiSoft : C.line, borderRadius: R.card, overflow: 'hidden' }}>
+            {ts.map((x, i) => <TaskRow key={x.id} t={x} first={i === 0} />)}
+          </View>
+        </View>
+      ) : null))}
+    </View>
   );
 }
 
@@ -116,7 +149,7 @@ function TaskRow({ t, first }: { t: Task; first: boolean }) {
 
   return (
     <Pressable onPress={() => sheets.open({ kind: 'task', task: t })}
-      style={({ pressed }) => ({ flexDirection: 'row', gap: 12, padding: 12, paddingHorizontal: 14, alignItems: 'flex-start', backgroundColor: pressed ? '#FBF0EC' : C.surface, borderTopWidth: first ? 0 : 1, borderTopColor: C.line })}>
+      style={({ pressed }) => ({ flexDirection: 'row', gap: 12, padding: 12, paddingHorizontal: 14, alignItems: 'flex-start', backgroundColor: pressed ? C.pressed : C.surface, borderTopWidth: first ? 0 : 1, borderTopColor: C.line })}>
       <View style={{ paddingTop: 1 }}><CheckBox checked={t.done} onChange={toggle} label={`Feito: ${t.title}`} /></View>
       <View style={{ flex: 1, gap: 5 }}>
         <Txt w="semibold" size={15.5} color={t.done ? C.muted : C.ink} style={t.done ? { textDecorationLine: 'line-through' } : undefined}>{t.title}</Txt>

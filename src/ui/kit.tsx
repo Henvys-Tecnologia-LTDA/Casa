@@ -319,7 +319,7 @@ export function Field({ label, value, onChangeText, placeholder, keyboardType, m
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#A39A90"
+        placeholderTextColor={C.placeholder}
         keyboardType={keyboardType}
         multiline={multiline}
         autoFocus={autoFocus}

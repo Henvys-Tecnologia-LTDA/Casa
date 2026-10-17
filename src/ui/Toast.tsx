@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from './Icon';
 import { Txt } from './kit';
-import { C } from './theme';
+import { alpha, C } from './theme';
 
 // Aviso curto na parte de baixo ("Comprado!", "Tarefa adicionada"...), com ação opcional.
 
@@ -41,7 +41,7 @@ export function ToastProvider({ children, bottom = 92 }: { children: ReactNode; 
             {t.action ? (
               <Pressable
                 onPress={() => { const a = t.action; setT(null); a?.fn(); }}
-                style={{ backgroundColor: 'rgba(251,241,239,0.18)', borderRadius: 999, paddingVertical: 6, paddingHorizontal: 12 }}>
+                style={{ backgroundColor: alpha(C.bg, 0.18), borderRadius: 999, paddingVertical: 6, paddingHorizontal: 12 }}>
                 <Txt w="semibold" size={13} color={C.bg}>{t.action.label}</Txt>
               </Pressable>
             ) : null}

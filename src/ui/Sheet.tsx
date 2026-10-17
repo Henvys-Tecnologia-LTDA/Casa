@@ -79,12 +79,12 @@ export const Spacer = () => <View style={{ flex: 1 }} />;
 const s = StyleSheet.create({
   // Acima das telas empilhadas (Ajustes, cômodo, apê...) no Android e no navegador.
   layer: { zIndex: 1000, elevation: 1000 },
-  backdrop: { backgroundColor: 'rgba(20,14,12,0.5)' },
+  backdrop: { backgroundColor: C.backdrop },
   wrap: { position: 'absolute', left: 0, right: 0, bottom: 0, justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: 'hidden', maxHeight: '100%',
     width: '100%', maxWidth: 640, alignSelf: 'center',
-    shadowColor: '#2A2320', shadowOpacity: 0.18, shadowRadius: 24, shadowOffset: { width: 0, height: -6 }, elevation: 16,
+    shadowColor: C.shadow, shadowOpacity: 0.18, shadowRadius: 24, shadowOffset: { width: 0, height: -6 }, elevation: 16,
   },
   grab: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: C.line, marginTop: 8 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: 10, paddingBottom: 8 },

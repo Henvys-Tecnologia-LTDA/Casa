@@ -8,11 +8,15 @@ import { resolveTabs } from '@/lib/tabs';
 import {
   TABLES, type DataTables, type Household, type Member, type RowOf, type ShopList, type TableName, type TabKey, type Who,
 } from '@/lib/types';
+import { resumoWidget } from '@/lib/widget';
+import { atualizarWidget } from '@/widget/atualizar';
 
+import { isNetErr, loadCache, loadFila, saveCache, saveFila, type Op } from './offline';
 import { useSession } from './session';
 
 // Dados do casal aberto: carrega tudo do Supabase, aplica as mudanças em tempo real
-// (Realtime, filtrado pelo casal) e faz as escritas com atualização otimista.
+// (Realtime, filtrado pelo casal) e faz as escritas com atualização otimista. Sem internet, abre com a
+// cópia guardada no aparelho e põe as escritas numa fila que sobe quando a conexão volta (offline.ts).
 
 type Status = 'connecting' | 'ok' | 'offline';
 
@@ -22,11 +26,13 @@ interface State {
   t: DataTables;
   ready: boolean;
   status: Status;
+  /** Mudanças feitas sem internet esperando para subir. */
+  fila: number;
 }
 
 const emptyTables = (): DataTables => ({
   sections: [], items: [], tasks: [], apartments: [], trips: [],
-  trip_costs: [], trip_deposits: [], packing_items: [], goals: [], goal_deposits: [],
+  trip_costs: [], trip_deposits: [], packing_items: [], goals: [], goal_deposits: [], settlements: [],
 });
 
 // Valores padrão de cada tabela (os mesmos do banco), para a linha nova já aparecer completa.
@@ -43,13 +49,20 @@ const DEFAULTS: { [K in TableName]: Partial<RowOf<K>> } = {
     itbi: 3, cartorio: 1.5, notes: '', image: '', likes: [], favorite: false,
   },
   trips: { destination: '', start_date: null, end_date: null, status: 'planejando', people: 2, notes: '', image: '', likes: [] },
-  trip_costs: { descr: '', cat: 'outros', amount: 0, parcelas: 1, parc_start: '', paid: false },
+  trip_costs: { descr: '', cat: 'outros', amount: 0, parcelas: 1, parc_start: '', paid: false, payer: '' },
   trip_deposits: { by_user: null },
   packing_items: { done: false },
   goals: { target: 0, deadline: '' },
   goal_deposits: { who: 'ambos', by_user: null },
+  settlements: { note: '', by_user: null },
 };
-const NO_UPDATED_AT = new Set<TableName>(['trip_deposits', 'goal_deposits']);
+// O que o banco apaga junto (on delete cascade), para o desfazer recolocar.
+const CHILDREN: Partial<Record<TableName, [TableName, string][]>> = {
+  sections: [['items', 'section_id']],
+  trips: [['trip_costs', 'trip_id'], ['trip_deposits', 'trip_id'], ['packing_items', 'trip_id']],
+  goals: [['goal_deposits', 'goal_id']],
+};
+const NO_UPDATED_AT = new Set<TableName>(['trip_deposits', 'goal_deposits', 'settlements']);
 
 // O Postgres manda "numeric" como número, mas por garantia convertemos textos numéricos.
 const NUMERIC = new Set([
@@ -65,8 +78,23 @@ function normalize<T>(row: T): T {
   return r as T;
 }
 
+// Executa uma mudança da fila. Linha que já existe (subiu antes de a conexão cair) conta como feita.
+async function runOp(op: Op) {
+  const q = supabase.from(op.table);
+  const { error } = op.k === 'insert' ? await q.insert(op.row as any)
+    : op.k === 'update' ? await q.update(op.patch as any).eq('id', op.id)
+      : await q.delete().eq('id', op.id);
+  if (error && !(op.k === 'insert' && error.code === '23505')) throw error;
+}
+
 class Store {
-  state: State = { household: null, members: [], t: emptyTables(), ready: false, status: 'connecting' };
+  state: State = { household: null, members: [], t: emptyTables(), ready: false, status: 'connecting', fila: 0 };
+  ops: Op[] = [];
+  flushing = false;
+  init: Promise<void> | null = null;
+  setQueue(ops: Op[]) { this.ops = ops; }
+  setFlushing(v: boolean) { this.flushing = v; }
+  setInit(p: Promise<void>) { this.init = p; }
   private listeners = new Set<() => void>();
   pending = new Map<string, number>();
   subscribe = (fn: () => void) => {
@@ -110,6 +138,8 @@ interface DataCtx {
   insert: <T extends TableName>(table: T, row: Partial<RowOf<T>>) => Promise<RowOf<T>>;
   update: <T extends TableName>(table: T, id: string, patch: Partial<RowOf<T>>) => Promise<void>;
   remove: (table: TableName, id: string) => Promise<void>;
+  /** Apaga e devolve como desfazer: recoloca a linha e o que saiu junto (itens do cômodo, custos da viagem…). */
+  removeUndo: (table: TableName, id: string) => Promise<() => Promise<void>>;
   updateHousehold: (patch: Partial<Pick<Household, 'name' | 'name_a' | 'name_b' | 'renda' | 'budget_casa' | 'budget_switch' | 'photo' | 'tabs'>>) => Promise<void>;
   updateMyName: (name: string) => Promise<void>;
   updateMyNotify: (patch: Partial<Pick<Member, 'notify_paused' | 'notify_off'>>) => Promise<void>;
@@ -130,6 +160,7 @@ export function DataProvider({ hid, children }: { hid: string; children: ReactNo
   }, [hid, store]);
 
   const reload = useCallback(async () => {
+    if (store.init) await store.init;
     const [h, m, ...rest] = await Promise.all([
       supabase.from('households').select('*').eq('id', hid).maybeSingle(),
       supabase.from('household_members').select('*').eq('household_id', hid),
@@ -154,11 +185,57 @@ export function DataProvider({ hid, children }: { hid: string; children: ReactNo
         if (store.isPending(local.id) && !rows.some(r => r.id === local.id)) (t as any)[name].push(local);
       }
     });
-    store.set(s => ({ ...s, household: normalize(h.data as Household), members: (m.data || []) as Member[], t, ready: true }));
+    // Leu do servidor sem nada na fila: se estava "sem conexão", já voltou.
+    const voltou = (st: Status) => (st === 'offline' && !store.ops.length ? 'ok' : st);
+    store.set(s => ({ ...s, household: normalize(h.data as Household), members: (m.data || []) as Member[], t, ready: true, status: voltou(s.status) }));
   }, [hid, store, refreshMemberships]);
+
+  // Fila do que foi feito sem internet: guarda no aparelho e sobe em ordem quando der.
+  const setOps = useCallback((ops: Op[]) => {
+    store.setQueue(ops);
+    saveFila(hid, ops);
+    store.set(s => ({ ...s, fila: ops.length }));
+  }, [hid, store]);
+  const enqueue = useCallback((op: Op) => {
+    setOps([...store.ops, op]);
+    store.set(s => ({ ...s, status: 'offline' }));
+  }, [store, setOps]);
+  const flush = useCallback(async () => {
+    if (store.flushing || !store.ops.length) return;
+    store.setFlushing(true);
+    let feitos = 0;
+    try {
+      while (store.ops.length) {
+        const op = store.ops[0];
+        try {
+          await runOp(op);
+        } catch (e) {
+          if (isNetErr(e)) break; // ainda sem internet: tenta de novo depois
+          console.warn('fila: mudança recusada pelo servidor, descartada', op.k, op.table, e);
+        }
+        store.bump(op.id, -1);
+        setOps(store.ops.slice(1));
+        feitos++;
+      }
+    } finally {
+      store.setFlushing(false);
+    }
+    if (feitos) await reload();
+  }, [store, setOps, reload]);
 
   useEffect(() => {
     let cancelled = false;
+    // Antes do primeiro carregamento: a cópia guardada (abre mesmo sem internet) e a fila pendente.
+    store.setInit((async () => {
+      const [cache, ops] = await Promise.all([loadCache(hid), loadFila(hid)]);
+      if (cancelled) return;
+      store.setQueue(ops);
+      for (const op of ops) store.bump(op.id, 1);
+      store.set(s => (cache && !s.ready
+        ? { ...s, household: cache.household, members: cache.members ?? [], t: { ...emptyTables(), ...cache.t }, ready: true, fila: ops.length }
+        : { ...s, fila: ops.length }));
+    })());
+    const sync = () => { if (store.ops.length) flush(); else reload(); };
     const onRow = (table: TableName, row: any) => {
       if (!row?.id || row.household_id !== hid || store.isPending(row.id)) return;
       store.upsert(table, normalize(row));
@@ -181,19 +258,41 @@ export function DataProvider({ hid, children }: { hid: string; children: ReactNo
       if (cancelled) return;
       if (status === 'SUBSCRIBED') {
         store.set(s => ({ ...s, status: 'ok' }));
-        reload(); // pega o que mudou enquanto estava desconectado
+        sync(); // sobe a fila e pega o que mudou enquanto estava desconectado
       } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
         store.set(s => ({ ...s, status: 'offline' }));
       }
     });
-    reload();
-    const sub = AppState.addEventListener('change', st => { if (st === 'active') reload(); });
+    reload().then(() => flush());
+    const sub = AppState.addEventListener('change', st => { if (st === 'active') sync(); });
+    // Com fila parada, tenta de novo a cada 20 s; no navegador, também quando a conexão volta.
+    const timer = setInterval(() => { if (store.ops.length) flush(); }, 20000);
+    const online = () => sync();
+    if (typeof window !== 'undefined' && window.addEventListener) window.addEventListener('online', online);
     return () => {
       cancelled = true;
       sub.remove();
+      clearInterval(timer);
+      if (typeof window !== 'undefined' && window.removeEventListener) window.removeEventListener('online', online);
       supabase.removeChannel(ch);
     };
-  }, [hid, store, reload, loadMembers]);
+  }, [hid, store, reload, loadMembers, flush]);
+
+  // Cópia no aparelho, salva pouco depois de cada mudança (e o resumo do widget do Android).
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout> | null = null;
+    const unsub = store.subscribe(() => {
+      if (!store.state.ready) return;
+      if (t) clearTimeout(t);
+      t = setTimeout(() => {
+        const s = store.state;
+        saveCache(hid, { household: s.household, members: s.members, t: s.t });
+        const tabs = resolveTabs(s.household);
+        atualizarWidget(resumoWidget(hid, s.t, { label: k => tabs[k].label, hidden: k => !!tabs[k].hidden }));
+      }, 1500);
+    });
+    return () => { unsub(); if (t) clearTimeout(t); };
+  }, [hid, store]);
 
   const insert = useCallback(async <T extends TableName>(table: T, row: Partial<RowOf<T>>): Promise<RowOf<T>> => {
     const now = new Date().toISOString();
@@ -203,6 +302,8 @@ export function DataProvider({ hid, children }: { hid: string; children: ReactNo
     } as RowOf<T>;
     store.upsert(table, full);
     store.bump(full.id, 1);
+    const queue = () => { enqueue({ k: 'insert', table, id: full.id, row: full as unknown as Record<string, unknown> }); return full; };
+    if (store.ops.length) { queue(); flush(); return full; } // fila andando: entra atrás, para manter a ordem
     try {
       const { data, error } = await supabase.from(table).insert(full as any).select().single();
       if (error) throw error;
@@ -211,42 +312,60 @@ export function DataProvider({ hid, children }: { hid: string; children: ReactNo
       if (!store.isPending(full.id)) store.upsert(table, saved);
       return saved;
     } catch (e) {
+      if (isNetErr(e)) return queue();
       store.bump(full.id, -1);
       store.remove(table, full.id);
       throw new Error(friendlyError(e));
     }
-  }, [hid, store]);
+  }, [hid, store, enqueue, flush]);
 
   const update = useCallback(async <T extends TableName>(table: T, id: string, patch: Partial<RowOf<T>>) => {
     const prev = store.find(table, id);
     if (prev) store.upsert(table, { ...prev, ...patch } as RowOf<T>);
     store.bump(id, 1);
+    const queue = () => enqueue({ k: 'update', table, id, patch: patch as Record<string, unknown> });
+    if (store.ops.length) { queue(); flush(); return; }
     try {
       const { data, error } = await supabase.from(table).update(patch as any).eq('id', id).select().maybeSingle();
       if (error) throw error;
       store.bump(id, -1);
       if (data && !store.isPending(id)) store.upsert(table, normalize(data as RowOf<T>));
     } catch (e) {
+      if (isNetErr(e)) { queue(); return; }
       store.bump(id, -1);
       if (prev && !store.isPending(id)) store.upsert(table, prev);
       throw new Error(friendlyError(e));
     }
-  }, [store]);
+  }, [store, enqueue, flush]);
 
   const remove = useCallback(async (table: TableName, id: string) => {
     const prev = store.find(table, id);
     store.remove(table, id);
     store.bump(id, 1);
+    const queue = () => enqueue({ k: 'delete', table, id });
+    if (store.ops.length) { queue(); flush(); return; }
     try {
       const { error } = await supabase.from(table).delete().eq('id', id);
       if (error) throw error;
+      store.bump(id, -1);
     } catch (e) {
+      if (isNetErr(e)) { queue(); return; }
+      store.bump(id, -1);
       if (prev) store.upsert(table, prev as any);
       throw new Error(friendlyError(e));
-    } finally {
-      store.bump(id, -1);
     }
-  }, [store]);
+  }, [store, enqueue, flush]);
+
+  const removeUndo = useCallback<DataCtx['removeUndo']>(async (table, id) => {
+    const row = store.find(table, id);
+    const kids = (CHILDREN[table] ?? []).map(([t, fk]) => [t, (store.state.t[t] as any[]).filter(r => r[fk] === id)] as const);
+    await remove(table, id);
+    for (const [t, rows] of kids) for (const r of rows) store.remove(t, r.id);
+    return async () => {
+      if (row) await insert(table, row as any);
+      for (const [t, rows] of kids) for (const r of rows) await insert(t, r);
+    };
+  }, [store, remove, insert]);
 
   const updateHousehold = useCallback<DataCtx['updateHousehold']>(async patch => {
     const prev = store.state.household;
@@ -292,8 +411,8 @@ export function DataProvider({ hid, children }: { hid: string; children: ReactNo
   }, [hid, store]);
 
   const value = useMemo<DataCtx>(() => ({
-    store, hid, me, insert, update, remove, updateHousehold, updateMyName, updateMyNotify, regenerateInvite, reload,
-  }), [store, hid, me, insert, update, remove, updateHousehold, updateMyName, updateMyNotify, regenerateInvite, reload]);
+    store, hid, me, insert, update, remove, removeUndo, updateHousehold, updateMyName, updateMyNotify, regenerateInvite, reload,
+  }), [store, hid, me, insert, update, remove, removeUndo, updateHousehold, updateMyName, updateMyNotify, regenerateInvite, reload]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

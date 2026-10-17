@@ -4,6 +4,7 @@ import { Pressable, TextInput, View } from 'react-native';
 
 import { useData } from '@/data/DataProvider';
 import { balance, budgetState, byPrio, optsOf, PARCELAS, PHASES, stats, sub, TABS } from '@/lib/calc';
+import { textoLista } from '@/lib/compartilhar';
 import { money, norm, plural } from '@/lib/format';
 import type { Item, Section, ShopList } from '@/lib/types';
 import { Icon } from '@/ui/Icon';
@@ -11,6 +12,7 @@ import {
   Btn, Card, Dot, DuoBar, Empty, Label, Meter, Muted, Panel, Serif, Summary, Txt, useAccent, ViewHead, type StatCell,
 } from '@/ui/kit';
 import { AppHeader, Appear, Loading, Screen } from '@/ui/Screen';
+import { compartilhar } from '@/ui/share';
 import { C, F, R, soft } from '@/ui/theme';
 
 import { useSheets } from '../sheetsCtx';
@@ -36,7 +38,13 @@ export function ShopHome({ list }: { list: ShopList }) {
       <SearchBar value={q} onChange={setQ} placeholder={`Buscar em ${d.tabLabel(list)}…`} />
       {!d.ready ? <Loading /> : q.trim() ? <SearchResults list={list} q={q.trim()} /> : (
         <>
-          <ViewHead title={T.Units} sub={secs.length ? `Toque em um ${T.unit} para abrir a lista.` : undefined} />
+          <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+            <ViewHead title={T.Units} sub={secs.length ? `Toque em um ${T.unit} para abrir a lista.` : undefined} style={{ flexShrink: 1 }} />
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+              {secs.length > 1 ? <Btn label="Organizar" kind="ghost" size="sm" icon="grip" onPress={() => sheets.open({ kind: 'organizar', list })} /> : null}
+              {items.length ? <Btn label="Mandar a lista" kind="ghost" size="sm" icon="share" onPress={() => compartilhar(textoLista(d.tabLabel(list), secs, d.itemsOf))} /> : null}
+            </View>
+          </View>
           {!secs.length ? (
             <Empty
               icon={d.tabs[list].icon}
@@ -105,7 +113,7 @@ export function SearchBar({ value, onChange, placeholder }: { value: string; onC
         value={value}
         onChangeText={onChange}
         placeholder={placeholder}
-        placeholderTextColor="#A39A90"
+        placeholderTextColor={C.placeholder}
         selectionColor={accent}
         returnKeyType="search"
         style={{ flex: 1, fontFamily: F.regular, fontSize: 15, color: C.ink, paddingVertical: 11, paddingHorizontal: 10 }}

@@ -18,6 +18,7 @@ import { ACCENT, C, F, soft } from '@/ui/theme';
 import { useToast } from '@/ui/Toast';
 
 import { useSheets } from '../sheetsCtx';
+import { ExportPanel } from './ExportPanel';
 import { NotifyPanel } from './NotifyPanel';
 
 // Ajustes do casal (nomes, renda, tetos) + convite, membros, trocar de casal e sair.
@@ -155,6 +156,8 @@ export function SettingsScreen() {
         <ErrText msg={err} />
         <View style={{ alignSelf: 'flex-start' }}><Btn label="Salvar ajustes" onPress={save} busy={busy} /></View>
       </Panel>
+
+      <ExportPanel />
 
       <Panel title="Convidar para este casal" icon="heart">
         <Muted>Quem entrar com este código vê e edita tudo deste casal, em tempo real. Mande só para o seu par.</Muted>

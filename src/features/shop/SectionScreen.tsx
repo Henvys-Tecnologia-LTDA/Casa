@@ -4,10 +4,12 @@ import { ScrollView, View } from 'react-native';
 
 import { useData } from '@/data/DataProvider';
 import { budgetState, byPrio, PARCELAS, PHASE, PHASES, stats, sub, TABS } from '@/lib/calc';
+import { textoSecao } from '@/lib/compartilhar';
 import { money, plural } from '@/lib/format';
 import type { Item, ShopList } from '@/lib/types';
 import { Icon } from '@/ui/Icon';
-import { Btn, Chip, Empty, Meter, Mini, Minis, Muted, Serif, useAccent } from '@/ui/kit';
+import { compartilhar } from '@/ui/share';
+import { Btn, Chip, Empty, IconBtn, Meter, Mini, Minis, Muted, Serif, useAccent } from '@/ui/kit';
 import { BackBar, Loading, Screen } from '@/ui/Screen';
 import { R } from '@/ui/theme';
 
@@ -51,7 +53,7 @@ export function SectionScreen({ id }: { id: string }) {
 
   return (
     <Screen tab={list} inTabs={false} onFab={() => sheets.open({ kind: 'item', item: null, secId: s.id, list })} fabLabel="Novo item">
-      <BackBar label={T.Units} />
+      <BackBar label={T.Units} right={all.length ? <><View style={{ flex: 1 }} /><IconBtn icon="share" label="Mandar este cômodo no WhatsApp" onPress={() => compartilhar(textoSecao(s, all, d.tabLabel(list)))} /></> : undefined} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
         {d.secs(list).map(c => (
           <Chip key={c.id} label={c.name} icon={c.icon || 'box'} on={c.id === s.id} onPress={() => c.id !== s.id && router.replace({ pathname: '/section/[id]', params: { id: c.id } })} />

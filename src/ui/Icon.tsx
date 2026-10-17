@@ -1,5 +1,7 @@
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
+import { C } from './theme';
+
 // Ícones da página (traço 1.8, pontas arredondadas), desenhados com react-native-svg.
 
 type Shape = string | { r: [number, number, number, number, number] } | { c: [number, number, number] };
@@ -51,11 +53,15 @@ const ICONS: Record<string, Shape[]> = {
   copy: [{ r: [8, 8, 12, 12, 2] }, 'M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2'],
   share: ['M12 3v12', 'M7 8l5-5 5 5', 'M5 13v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6'],
   refresh: ['M20 11a8 8 0 0 0-14.6-4.5L4 8', 'M4 4v4h4', 'M4 13a8 8 0 0 0 14.6 4.5L20 16', 'M20 20v-4h-4'],
+  clock: [{ c: [12, 12, 9] }, 'M12 7.5V12l3 2'],
+  grip: ['M5 9h14M5 15h14'],
+  up: ['M6 15l6-6 6 6'],
+  down: ['M6 9l6 6 6-6'],
 };
 
 export const ICON_NAMES = Object.keys(ICONS);
 
-export function Icon({ name, size = 20, color = '#2A2320', fill, strokeWidth = 1.8 }: {
+export function Icon({ name, size = 20, color = C.ink, fill, strokeWidth = 1.8 }: {
   name: string; size?: number; color?: string; fill?: boolean; strokeWidth?: number;
 }) {
   const shapes = ICONS[name] || ICONS.box;

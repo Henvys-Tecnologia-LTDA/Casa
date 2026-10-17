@@ -5,17 +5,19 @@ import { View } from 'react-native';
 import { useActions, useData } from '@/data/DataProvider';
 import { CAT, CATS, TSTATUS } from '@/lib/calc';
 import { dayToInput, fmtInput, inputToDay, inputToYm, money, nextYm, parsePrice, ymToInput } from '@/lib/format';
-import type { Trip, TripCost } from '@/lib/types';
+import type { Trip, TripCost, Who } from '@/lib/types';
 import { DayField, IntField, MoneyField, MonthField } from '@/ui/fields';
-import { AccentCtx, Btn, Chip, ErrText, Field, Grid2, Hint, Toggle, Txt } from '@/ui/kit';
+import { AccentCtx, Btn, Chip, ErrText, Field, Grid2, Hint, Seg, Toggle, Txt } from '@/ui/kit';
 import { deletePhotos } from '@/ui/Photo';
 import { PhotoZone, usePhotoDraft } from '@/ui/PhotoZone';
 import { Sheet, Spacer, useConfirm } from '@/ui/Sheet';
 import { ACCENT, C } from '@/ui/theme';
 import { useToast } from '@/ui/Toast';
+import { useApagar } from '@/ui/useApagar';
 
 export function TripSheet({ trip, onClose }: { trip: Trip | null; onClose: () => void }) {
-  const { insert, update, remove, hid } = useActions();
+  const { insert, update, hid } = useActions();
+  const apagar = useApagar();
   const toast = useToast();
   const confirm = useConfirm();
   const t = trip;
@@ -62,11 +64,9 @@ export function TripSheet({ trip, onClose }: { trip: Trip | null; onClose: () =>
     const ok = await confirm({ title: `Excluir ${t.name || 'esta viagem'}?`, text: 'Custos, cofrinho e mala desta viagem saem da lista de vocês dois.', yes: 'Excluir viagem' });
     if (!ok) return;
     try {
-      await remove('trips', t.id);
-      deletePhotos([t.image]);
+      await apagar('trips', t.id, 'Viagem excluída', [t.image]);
       onClose();
       if (router.canGoBack()) router.back();
-      toast('Viagem excluída', 'trash');
     } catch (e: any) { setErr(e?.message || ''); }
   }
 
@@ -101,7 +101,8 @@ export function TripSheet({ trip, onClose }: { trip: Trip | null; onClose: () =>
 
 export function CostSheet({ tripId, cost, onClose }: { tripId: string; cost: TripCost | null; onClose: () => void }) {
   const d = useData();
-  const { insert, update, remove } = useActions();
+  const { insert, update } = useActions();
+  const apagar = useApagar();
   const toast = useToast();
   const confirm = useConfirm();
   const trip = d.t.trips.find(x => x.id === tripId);
@@ -110,6 +111,7 @@ export function CostSheet({ tripId, cost, onClose }: { tripId: string; cost: Tri
   const [amount, setAmount] = useState(cost ? fmtInput(cost.amount) : '');
   const [parc, setParc] = useState(String(cost?.parcelas || 1));
   const [paid, setPaid] = useState(!!cost?.paid);
+  const [payer, setPayer] = useState<Who>(cost?.payer || '');
   const [start, setStart] = useState(ymToInput(cost?.parc_start || nextYm(cost ? trip?.created_at : null)));
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
@@ -119,7 +121,7 @@ export function CostSheet({ tripId, cost, onClose }: { tripId: string; cost: Tri
     if (!v) { setErr('Informe o valor, como 1.200,00.'); return; }
     const nn = Math.min(48, n);
     const data: Partial<TripCost> = {
-      descr: descr.trim(), cat, amount: v, parcelas: nn, paid, parc_start: nn > 1 ? (inputToYm(start) || nextYm(Date.now())) : '',
+      descr: descr.trim(), cat, amount: v, parcelas: nn, paid, payer: paid ? payer : '', parc_start: nn > 1 ? (inputToYm(start) || nextYm(Date.now())) : '',
     };
     setBusy(true);
     try {
@@ -132,7 +134,7 @@ export function CostSheet({ tripId, cost, onClose }: { tripId: string; cost: Tri
     if (!cost) return;
     const ok = await confirm({ title: `Excluir “${cost.descr || CAT[cost.cat]?.t || 'custo'}”?`, text: 'O custo sai do total da viagem.', yes: 'Excluir custo' });
     if (!ok) return;
-    try { await remove('trip_costs', cost.id); onClose(); toast('Custo excluído', 'trash'); } catch (e: any) { setErr(e?.message || ''); }
+    try { await apagar('trip_costs', cost.id, 'Custo excluído'); onClose(); } catch (e: any) { setErr(e?.message || ''); }
   }
 
   return (
@@ -156,6 +158,7 @@ export function CostSheet({ tripId, cost, onClose }: { tripId: string; cost: Tri
           {n > 1 ? <MonthField label="1ª parcela em" value={start} onChange={setStart} /> : null}
         </Grid2>
         <Toggle label="Já pago" value={paid} onChange={setPaid} />
+        {paid ? <Seg label="Quem pagou" value={payer} onChange={setPayer} options={[['a', d.nm('a')], ['b', d.nm('b')], ['ambos', 'Os dois']]} /> : null}
         {v ? <Hint>{n > 1 ? `${n}× de ${money(v / n)}` : `À vista: ${money(v)}`}</Hint> : null}
         <ErrText msg={err} />
       </Sheet>

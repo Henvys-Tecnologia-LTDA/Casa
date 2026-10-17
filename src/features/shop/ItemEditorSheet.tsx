@@ -1,9 +1,11 @@
+import * as Clipboard from 'expo-clipboard';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { useActions, useData } from '@/data/DataProvider';
 import { effective, hasPaid, optsOf, PARCELAS, qtyOf, SHOP } from '@/lib/calc';
 import { fmtInput, inputToYm, money, nextYm, normLink, parsePrice, rid, ymToInput } from '@/lib/format';
+import { lerLink, linkIn } from '@/lib/link';
 import type { Item, ItemOption, Phase, Priority, ShopList, Who } from '@/lib/types';
 import { MoneyField, MonthField, IntField } from '@/ui/fields';
 import { Icon } from '@/ui/Icon';
@@ -11,19 +13,23 @@ import { AccentCtx, Btn, Chip, ErrText, Field, Grid2, Hint, IconBtn, Muted, SecT
 import { deletePhotos, Photo, pickImage, uploadPhoto, type Picked } from '@/ui/Photo';
 import { PhotoZone, usePhotoDraft } from '@/ui/PhotoZone';
 import { Sheet, Spacer, useConfirm } from '@/ui/Sheet';
+import { useApagar } from '@/ui/useApagar';
 import { ACCENT, C, R } from '@/ui/theme';
 import { useToast } from '@/ui/Toast';
 
 interface OptDraft { id: string; name: string; store: string; priceStr: string; link: string; image: string; likes: string[]; picked: Picked | null }
 
-export function ItemEditorSheet({ item, secId, list, onClose }: { item: Item | null; secId?: string; list?: ShopList; onClose: () => void }) {
+export function ItemEditorSheet({ item, secId, list, name: name0, onClose }: {
+  item: Item | null; secId?: string; list?: ShopList; name?: string; onClose: () => void;
+}) {
   const d = useData();
-  const { insert, update, remove, hid, me } = useActions();
+  const { insert, update, hid, me } = useActions();
+  const apagar = useApagar();
   const toast = useToast();
   const confirm = useConfirm();
 
   const firstSec = item?.section_id || secId || d.secs(list || 'casa')[0]?.id || d.secs('casa')[0]?.id || d.secs('switch')[0]?.id || '';
-  const [name, setName] = useState(item?.name || '');
+  const [name, setName] = useState(item?.name || name0 || '');
   const [sec, setSec] = useState(firstSec);
   const [price, setPrice] = useState(item ? fmtInput(item.price) : '');
   const [qty, setQty] = useState(String(item ? qtyOf(item) : 1));
@@ -56,6 +62,46 @@ export function ItemEditorSheet({ item, secId, list, onClose }: { item: Item | n
   const nParc = Math.max(1, parseInt(parc, 10) || 1);
 
   const setOpt = (k: number, patch: Partial<OptDraft>) => setOpts(os => os.map((o, i) => (i === k ? { ...o, ...patch } : o)));
+
+  // "Colar link": lê a página da loja e preenche o que estiver vazio. Se o item já tem opções,
+  // o produto do link entra como mais uma opção.
+  const [paste, setPaste] = useState('');
+  const [reading, setReading] = useState(false);
+  const [filled, setFilled] = useState('');
+  async function fromLink(raw: string) {
+    const u = linkIn(raw);
+    if (!u || reading) return;
+    setReading(true); setErr(''); setFilled('');
+    try {
+      const info = await lerLink(u);
+      const got: string[] = [];
+      if (opts.length) {
+        setOpts(os => [...os, {
+          id: rid(), name: info.title, store: info.store, priceStr: info.price ? fmtInput(info.price) : '', link: info.url, image: info.image, likes: [], picked: null,
+        }]);
+        got.push('uma opção nova');
+      } else {
+        if (!name.trim() && info.title) { setName(info.title); got.push('nome'); }
+        if (info.price && !parsePrice(price)) { setPrice(fmtInput(info.price)); got.push('preço'); }
+        if (info.store && !store.trim()) { setStore(info.store); got.push('loja'); }
+        if (info.url) { setLink(info.url); got.push('link'); }
+        if (info.image && !photo.preview) { photo.setFromUrl(info.image); got.push('foto'); }
+      }
+      setFilled(got.length ? `Preenchido: ${got.join(', ')}.` : 'Os campos já estavam preenchidos; só conferi o link.');
+      setPaste('');
+    } catch (e: any) {
+      setErr(e?.message || 'Não deu para ler esse link. Preencha à mão.');
+    } finally {
+      setReading(false);
+    }
+  }
+  async function pasteAndFill() {
+    if (paste.trim()) { fromLink(paste); return; }
+    try {
+      const clip = await Clipboard.getStringAsync();
+      if (clip.trim()) { setPaste(clip.trim()); fromLink(clip); } else setErr('Copie o link do produto na loja e toque em Colar.');
+    } catch { setErr('Não deu para ler a área de transferência. Cole o link no campo.'); }
+  }
 
   async function save() {
     if (busy) return;
@@ -115,13 +161,11 @@ export function ItemEditorSheet({ item, secId, list, onClose }: { item: Item | n
 
   async function del() {
     if (!item) return;
-    const ok = await confirm({ title: `Excluir “${item.name}”?`, text: 'O item e as fotos saem da lista de vocês dois. Isso não pode ser desfeito.', yes: 'Excluir item' });
+    const ok = await confirm({ title: `Excluir “${item.name}”?`, text: 'O item e as fotos saem da lista de vocês dois. Dá para desfazer logo depois.', yes: 'Excluir item' });
     if (!ok) return;
     try {
-      await remove('items', item.id);
-      deletePhotos([item.image, ...optsOf(item).map(o => o.image)]);
+      await apagar('items', item.id, 'Item excluído', [item.image, ...optsOf(item).map(o => o.image)]);
       onClose();
-      toast('Item excluído', 'trash');
     } catch (e: any) { setErr(e?.message || 'Não foi possível excluir.'); }
   }
 
@@ -137,6 +181,14 @@ export function ItemEditorSheet({ item, secId, list, onClose }: { item: Item | n
           <Btn label="Cancelar" kind="ghost" onPress={onClose} />
           <Btn label={busy ? 'Salvando…' : 'Salvar'} onPress={save} busy={busy} />
         </>}>
+        <View style={{ gap: 8, padding: 12, borderRadius: 14, borderWidth: 1, borderColor: C.line, backgroundColor: C.bg }}>
+          <Txt w="semibold" size={12.5} color={C.muted}>Tem o link do produto?</Txt>
+          <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+            <Field value={paste} onChangeText={setPaste} placeholder="Cole aqui o link da loja" autoCapitalize="none" keyboardType="url" onSubmit={() => fromLink(paste)} style={{ flex: 1 }} />
+            <Btn label={paste.trim() ? 'Preencher' : 'Colar'} kind="ghost" size="sm" icon="ext" busy={reading} onPress={pasteAndFill} />
+          </View>
+          <Hint>{reading ? 'Lendo a página da loja…' : filled || 'O app lê nome, foto e preço da página. Algumas lojas não deixam; aí é só preencher à mão.'}</Hint>
+        </View>
         <PhotoZone draft={photo} icon={d.secById(sec)?.icon || 'image'} hint="Foto do item: escolha da galeria ou tire com a câmera." />
         <Field label="Nome do item" value={name} onChangeText={setName} placeholder="Ex.: Jogo de panelas" autoFocus={!item} />
 

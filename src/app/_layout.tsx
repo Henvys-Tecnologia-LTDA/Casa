@@ -13,7 +13,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SessionProvider } from '@/data/session';
 import { ConfirmProvider } from '@/ui/Sheet';
 import { Splash } from '@/ui/Splash';
-import { C } from '@/ui/theme';
+import { C, ESCURO } from '@/ui/theme';
 import { ToastProvider } from '@/ui/Toast';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -34,7 +34,7 @@ export default function RootLayout() {
         <SessionProvider>
           <ToastProvider>
             <ConfirmProvider>
-              <StatusBar style="dark" />
+              <StatusBar style={ESCURO ? 'light' : 'dark'} />
               <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg }, animation: 'fade' }} />
             </ConfirmProvider>
           </ToastProvider>

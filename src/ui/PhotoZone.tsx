@@ -12,12 +12,16 @@ export function usePhotoDraft(current: string) {
   const [picked, setPicked] = useState<Picked | null>(null);
   const [removed, setRemoved] = useState(false);
   const [err, setErr] = useState('');
+  // Foto que veio de um link colado (endereço da loja, sem enviar arquivo).
+  const [url, setUrl] = useState('');
+  const base = url || current;
   return {
     picked,
     removed,
     err,
-    preview: picked?.uri || (removed ? '' : current),
-    reset() { setPicked(null); setRemoved(false); setErr(''); },
+    preview: picked?.uri || (removed ? '' : base),
+    reset() { setPicked(null); setRemoved(false); setErr(''); setUrl(''); },
+    setFromUrl(u: string) { setUrl(u); setPicked(null); setRemoved(false); },
     async pick(source: 'library' | 'camera') {
       try {
         setErr('');
@@ -30,7 +34,7 @@ export function usePhotoDraft(current: string) {
     remove() { setPicked(null); setRemoved(true); },
     async result(hid: string): Promise<string> {
       if (picked) return uploadPhoto(hid, picked);
-      return removed ? '' : current;
+      return removed ? '' : base;
     },
   };
 }
