@@ -6,9 +6,9 @@ import { mLabel, money, mTick, pctTxt } from '@/lib/format';
 import { Legend, StackedBars, type Series } from '@/ui/Chart';
 import { Icon } from '@/ui/Icon';
 import { Label, Muted, Panel, Txt } from '@/ui/kit';
-import { C } from '@/ui/theme';
+import { C, porTema } from '@/ui/theme';
 
-const CORES: Record<string, string> = { casa: C.s1, switch: C.s2 };
+const CORES = porTema((): Record<string, string> => ({ casa: C.s1, switch: C.s2 }));
 
 // Gastos do mês (como o Mobills e o Organizze): o que compraram em cada mês, por lista, comparado
 // com o mês anterior, e os cômodos que mais pesaram no mês.
@@ -17,7 +17,7 @@ export function GastosPanel() {
   const meses = gastosPorMes(d.t.items, d.t.sections, 6);
   if (!meses.some(m => m.total > 0)) return null;
   const atual = meses[meses.length - 1], anterior = meses[meses.length - 2];
-  const series: Series[] = SHOP.filter(l => !d.tabs[l].hidden).map(l => ({ key: l, label: d.tabLabel(l), color: CORES[l] }));
+  const series: Series[] = SHOP.filter(l => !d.tabs[l].hidden).map(l => ({ key: l, label: d.tabLabel(l), color: CORES()[l] }));
   const variacao = anterior.total > 0 ? (atual.total - anterior.total) / anterior.total : null;
   const top = Object.entries(atual.porSecao).sort((a, b) => b[1] - a[1]).slice(0, 3)
     .map(([id, v]) => ({ s: d.secById(id), v })).filter(x => x.s);

@@ -13,6 +13,19 @@
     <meta name="apple-mobile-web-app-title" content="Casa a Dois" />
     <meta name="theme-color" content="#1C1715" media="(prefers-color-scheme: dark)" />
     <meta name="color-scheme" content="light dark" />
+    <!-- Tema escolhido nos Ajustes (src/ui/theme.ts), antes do app abrir: claro ou escuro fixo. -->
+    <script>
+      try {
+        var tema = localStorage.getItem('casa.tema');
+        if (tema === 'claro' || tema === 'escuro') {
+          document.documentElement.setAttribute('data-tema', tema);
+          document.documentElement.style.colorScheme = tema === 'escuro' ? 'dark' : 'light';
+          var cor = document.querySelector('meta[name=theme-color]');
+          if (cor && tema === 'escuro') cor.removeAttribute('media');
+          if (cor && tema === 'claro') cor.parentNode.removeChild(cor);
+        }
+      } catch (e) {}
+    </script>
     <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
     <style id="expo-reset">
       /* These styles make the body full-height */
@@ -33,11 +46,29 @@
         flex: 1;
       }
       /* Casinha enquanto o JS carrega, no mesmo lugar da tela de carregamento do app (src/ui/Splash.tsx). */
-      /* Modo escuro (src/ui/theme.ts): fundo de papel escuro antes do JS. */
+      /* Modo escuro (src/ui/theme.ts): fundo de papel escuro antes do JS, pelo aparelho ou pela escolha. */
       @media (prefers-color-scheme: dark) {
-        body {
+        html:not([data-tema="claro"]) body {
           background-color: #1C1715;
         }
+        html:not([data-tema="claro"]) .marca-clara {
+          display: none;
+        }
+        html:not([data-tema="claro"]) .marca-escura {
+          display: block;
+        }
+      }
+      html[data-tema="escuro"] body {
+        background-color: #1C1715;
+      }
+      html[data-tema="escuro"] .marca-clara {
+        display: none;
+      }
+      html[data-tema="escuro"] .marca-escura {
+        display: block;
+      }
+      .marca-escura {
+        display: none;
       }
       #carregando {
         flex: 1;
@@ -54,6 +85,6 @@
       You need to enable JavaScript to run this app.
     </noscript>
     <!-- The root element for your Expo app. O React troca o conteúdo ao montar. -->
-    <div id="root"><div id="carregando"><picture><source srcset="/marca-escura.svg" media="(prefers-color-scheme: dark)" /><img src="/marca.svg" width="120" height="120" alt="" /></picture></div></div>
+    <div id="root"><div id="carregando"><img class="marca-clara" src="/marca.svg" width="120" height="120" alt="" /><img class="marca-escura" src="/marca-escura.svg" width="120" height="120" alt="" /></div></div>
   </body>
 </html>

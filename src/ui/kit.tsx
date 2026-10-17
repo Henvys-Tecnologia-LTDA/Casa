@@ -9,12 +9,12 @@ import Animated, { useAnimatedStyle, useSharedValue, withSequence, withTiming } 
 
 import { Icon } from './Icon';
 import { checkIn, DUR, ease } from './motion';
-import { ACCENT, C, F, R, soft } from './theme';
+import { ACCENT, C, F, porTema, R, soft } from './theme';
 
 /* ---------- cor de destaque da aba ---------- */
 
-export const AccentCtx = createContext<string>(ACCENT.casa);
-export const useAccent = () => useContext(AccentCtx);
+export const AccentCtx = createContext<string | null>(null);
+export const useAccent = () => useContext(AccentCtx) ?? ACCENT.casa;
 
 export function tap(kind: 'light' | 'success' = 'light') {
   if (Platform.OS === 'web') return;
@@ -173,14 +173,14 @@ export function Panel({ title, icon, right, children, style }: { title?: string;
   );
 }
 
-const PILL_COLORS: Record<string, [string, string]> = {
+const PILL_COLORS = porTema((): Record<string, [string, string]> => ({
   alta: [C.hiSoft, C.hi], media: [C.midSoft, C.mid], baixa: [C.loSoft, C.lo], ok: [C.okSoft, C.ok],
   visitar: [C.loSoft, C.lo], visitado: [C.midSoft, C.mid], proposta: [C.okSoft, C.ok], descartado: [C.hiSoft, C.hi],
   sonho: [C.loSoft, C.lo], planejando: [C.midSoft, C.mid], confirmada: [C.okSoft, C.ok],
-};
+}));
 export function Pill({ label, kind = 'baixa', icon }: { label: string; kind?: string; icon?: string }) {
   const accent = useAccent();
-  const [bg, fg] = kind === 'acc' || kind === 'feita' ? [soft(accent), accent] : PILL_COLORS[kind] || PILL_COLORS.baixa;
+  const [bg, fg] = kind === 'acc' || kind === 'feita' ? [soft(accent), accent] : PILL_COLORS()[kind] || PILL_COLORS().baixa;
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: bg, borderRadius: R.pill, paddingVertical: 3, paddingHorizontal: 9, alignSelf: 'flex-start' }}>
       {icon ? <Icon name={icon} size={12} color={fg} /> : null}
@@ -444,7 +444,7 @@ export const SecTitle = ({ children }: { children: string }) => {
   return <Txt w="medium" size={11.5} color={C.coral} upper track={2.8} style={{ marginTop: 6 }}>{children}</Txt>;
 };
 
-export const styles = StyleSheet.create({
+export const styles = porTema(() => StyleSheet.create({
   rowGap: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   hair: { borderTopWidth: 1, borderTopColor: C.line },
-});
+}));

@@ -1,6 +1,8 @@
 // Identidade da Camila: papel rosado, tinta quente, coral, Jost com títulos em Cormorant itálico,
 // linhas finas e botões em pílula. Cores copiadas da página. No modo escuro, o mesmo clima em
-// papel escuro quente; a paleta é escolhida quando o app abre, pelo tema do aparelho.
+// papel escuro quente; automático pelo tema do aparelho ou escolhido nos Ajustes.
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSyncExternalStore } from 'react';
 import { Appearance, Platform } from 'react-native';
 
 import type { TabKey } from '@/lib/types';
@@ -68,19 +70,107 @@ const ESCURO_CORES: typeof CLARO = {
 // As duas paletas, para o que desenha os dois temas de uma vez (o widget da tela de início).
 export const PALETA = { claro: CLARO, escuro: ESCURO_CORES };
 
-export const ESCURO = Appearance.getColorScheme() === 'dark';
-export const C = ESCURO ? ESCURO_CORES : CLARO;
+const ACCENT_CLARO: Record<TabKey, string> = { casa: '#D9473F', switch: '#B83A62', ape: '#55804A', mudanca: '#A8612F', viagem: '#8C4F79', dinheiro: '#8A6512' };
+const ACCENT_ESCURO: Record<TabKey, string> = { casa: '#EE6A62', switch: '#E06A92', ape: '#84B577', mudanca: '#D58A52', viagem: '#C07FAE', dinheiro: '#C9A04A' };
 
-// No navegador, se o tema do sistema mudar com o site aberto, recarrega para aplicar a outra paleta.
-if (Platform.OS === 'web') {
-  Appearance.addChangeListener(({ colorScheme }) => {
-    if ((colorScheme === 'dark') !== ESCURO && typeof window !== 'undefined') window.location.reload();
-  });
+/* ---------- tema: automático (o do aparelho), claro ou escuro ---------- */
+// A escolha fica em cada aparelho (Ajustes). C e ACCENT são sempre os mesmos objetos, com as cores
+// trocadas por dentro; no celular o app redesenha tudo do zero (src/app/_layout.tsx) e, no
+// navegador, a página recarrega.
+
+export type Tema = 'auto' | 'claro' | 'escuro';
+export interface EstadoTema {
+  escolha: Tema;
+  escuro: boolean;
+  /** Sobe a cada troca de paleta (o app redesenha tudo). */
+  versao: number;
+  /** A escolha já foi lida do aparelho. */
+  pronto: boolean;
+  /** Tela em que estava quando o tema trocou, para voltar a ela. */
+  volta: string;
 }
 
-export const ACCENT: Record<TabKey, string> = ESCURO
-  ? { casa: '#EE6A62', switch: '#E06A92', ape: '#84B577', mudanca: '#D58A52', viagem: '#C07FAE', dinheiro: '#C9A04A' }
-  : { casa: '#D9473F', switch: '#B83A62', ape: '#55804A', mudanca: '#A8612F', viagem: '#8C4F79', dinheiro: '#8A6512' };
+const CHAVE = 'casa.tema';
+const WEB = Platform.OS === 'web';
+
+function valida(v: unknown): Tema {
+  return v === 'claro' || v === 'escuro' ? v : 'auto';
+}
+function escolhaDoNavegador(): Tema {
+  if (!WEB) return 'auto';
+  try { return valida(window.localStorage.getItem(CHAVE)); } catch { return 'auto'; }
+}
+function calcula(escolha: Tema) {
+  return escolha === 'escuro' || (escolha === 'auto' && Appearance.getColorScheme() === 'dark');
+}
+function pinta(escuro: boolean) {
+  Object.assign(C, escuro ? ESCURO_CORES : CLARO);
+  Object.assign(ACCENT, escuro ? ACCENT_ESCURO : ACCENT_CLARO);
+}
+
+const escolha0 = escolhaDoNavegador();
+let estado: EstadoTema = { escolha: escolha0, escuro: calcula(escolha0), versao: 0, pronto: WEB, volta: '/' };
+
+export const C: typeof CLARO = { ...(estado.escuro ? ESCURO_CORES : CLARO) };
+export const ACCENT: Record<TabKey, string> = { ...(estado.escuro ? ACCENT_ESCURO : ACCENT_CLARO) };
+
+const ouvintes = new Set<() => void>();
+let caminho = '/';
+
+/** A tela aberta agora (o _layout avisa), para voltar a ela depois de trocar o tema. */
+export function lembrarCaminho(p: string) { caminho = p; }
+
+function muda(patch: Partial<Pick<EstadoTema, 'escolha' | 'pronto'>>) {
+  const escolha = patch.escolha ?? estado.escolha;
+  const escuro = calcula(escolha);
+  const trocou = escuro !== estado.escuro;
+  if (trocou && WEB && typeof window !== 'undefined') { window.location.reload(); return; }
+  if (trocou) pinta(escuro);
+  estado = { ...estado, ...patch, escolha, escuro, ...(trocou ? { versao: estado.versao + 1, volta: caminho } : {}) };
+  ouvintes.forEach(f => f());
+}
+
+// No celular, também faz o teclado, os alertas e os seletores nativos seguirem a escolha.
+function sobrepoe(escolha: Tema) {
+  if (WEB) return;
+  try { Appearance.setColorScheme(escolha === 'auto' ? 'unspecified' : escolha === 'escuro' ? 'dark' : 'light'); } catch {}
+}
+
+/** No celular: lê a escolha guardada antes de desenhar o app (no navegador já veio do localStorage). */
+export async function carregarTema() {
+  if (estado.pronto) return;
+  let escolha: Tema = 'auto';
+  try { escolha = valida(await AsyncStorage.getItem(CHAVE)); } catch {}
+  sobrepoe(escolha);
+  muda({ escolha, pronto: true });
+}
+
+export function definirTema(escolha: Tema) {
+  if (WEB) {
+    try { window.localStorage.setItem(CHAVE, escolha); } catch {}
+  } else {
+    AsyncStorage.setItem(CHAVE, escolha).catch(() => {});
+  }
+  sobrepoe(escolha);
+  muda({ escolha });
+}
+
+// No automático, segue o aparelho quando o tema dele muda com o app aberto.
+Appearance.addChangeListener(() => muda({}));
+
+const assina = (f: () => void) => { ouvintes.add(f); return () => { ouvintes.delete(f); }; };
+const agora = () => estado;
+export const useTema = () => useSyncExternalStore(assina, agora, agora);
+
+/** Para estilos e listas de cores criados fora dos componentes: refeitos quando o tema troca. */
+export function porTema<T>(faz: () => T): () => T {
+  let v = -1;
+  let valor: T;
+  return () => {
+    if (v !== estado.versao) { v = estado.versao; valor = faz(); }
+    return valor;
+  };
+}
 
 export const F = {
   light: 'Jost_300Light',

@@ -20,6 +20,7 @@ import { useToast } from '@/ui/Toast';
 import { useSheets } from '../sheetsCtx';
 import { ExportPanel } from './ExportPanel';
 import { NotifyPanel } from './NotifyPanel';
+import { TemaPanel } from './TemaPanel';
 
 // Ajustes do casal (nomes, renda, tetos) + convite, membros, trocar de casal e sair.
 export function SettingsScreen() {
@@ -134,6 +135,8 @@ export function SettingsScreen() {
           })}
         </View>
       </Panel>
+
+      <TemaPanel />
 
       <NotifyPanel />
 

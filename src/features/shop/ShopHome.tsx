@@ -13,7 +13,7 @@ import {
 } from '@/ui/kit';
 import { AppHeader, Appear, Loading, Screen } from '@/ui/Screen';
 import { compartilhar } from '@/ui/share';
-import { C, F, R, soft } from '@/ui/theme';
+import { C, F, porTema, R, soft } from '@/ui/theme';
 
 import { useSheets } from '../sheetsCtx';
 import { ItemList } from './ItemRow';
@@ -58,7 +58,7 @@ export function ShopHome({ list }: { list: ShopList }) {
               <Appear i={secs.length} style={{ width: '48.5%' }}>
                 <Pressable
                   onPress={() => sheets.open({ kind: 'section', list, sec: null })}
-                  style={({ pressed }) => [roomBox, { width: '100%', flexGrow: 1, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 130, backgroundColor: 'transparent', borderColor: pressed ? C.ink : C.line, transform: [{ scale: pressed ? 0.97 : 1 }] }]}>
+                  style={({ pressed }) => [roomBox(), { width: '100%', flexGrow: 1, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 130, backgroundColor: 'transparent', borderColor: pressed ? C.ink : C.line, transform: [{ scale: pressed ? 0.97 : 1 }] }]}>
                   <Icon name="plus" color={C.muted} />
                   <Txt w="semibold" color={C.muted}>{T.novo}</Txt>
                 </Pressable>
@@ -79,9 +79,9 @@ export function ShopHome({ list }: { list: ShopList }) {
   );
 }
 
-const roomBox = {
+const roomBox = porTema(() => ({
   width: '48.5%' as const, padding: 14, borderRadius: R.card, borderWidth: 1, borderColor: C.line, backgroundColor: C.surface, gap: 4,
-};
+}));
 
 function ShopSummary({ list }: { list: ShopList }) {
   const d = useData();
@@ -152,7 +152,7 @@ function RoomCard({ sec, items, i }: { sec: Section; items: Item[]; i: number })
   return (
     <Appear i={i} style={{ width: '48.5%' }}>
     <Pressable onPress={() => router.push({ pathname: '/section/[id]', params: { id: sec.id } })}
-      style={({ pressed }) => [roomBox, { width: '100%', flexGrow: 1 }, pressed && { borderColor: C.ink, transform: [{ scale: 0.97 }] }]}>
+      style={({ pressed }) => [roomBox(), { width: '100%', flexGrow: 1 }, pressed && { borderColor: C.ink, transform: [{ scale: 0.97 }] }]}>
       <View style={{ width: 40, height: 40, borderRadius: R.icon, backgroundColor: soft(accent), alignItems: 'center', justifyContent: 'center', marginBottom: 6 }}>
         <Icon name={sec.icon || 'box'} size={22} color={accent} />
       </View>

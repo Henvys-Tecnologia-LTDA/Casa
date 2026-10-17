@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from './Icon';
 import { Btn, IconBtn, Muted, Serif, Txt } from './kit';
 import { backdropIn, backdropOut, dialogIn, dialogOut, sheetIn, sheetOut } from './motion';
-import { C } from './theme';
+import { C, porTema } from './theme';
 
 // Janelas que sobem de baixo (bottom sheets). Ficam numa camada dentro do app (não em Modal nativo):
 // assim a janela gruda na parte de baixo da tela e sobe junto com o teclado, e o campo
@@ -40,33 +40,33 @@ function SheetBody({ onClose, title, children, footer, media, live }: {
   const foot = useAnimatedStyle(() => ({ paddingBottom: 14 + insets.bottom * (1 - progress.get()) }));
   const footH = footer ? 74 : 0;
   return (
-    <View style={[StyleSheet.absoluteFill, s.layer]} pointerEvents="box-none">
-      <Animated.View entering={backdropIn} exiting={backdropOut} style={[StyleSheet.absoluteFill, s.backdrop]}>
+    <View style={[StyleSheet.absoluteFill, st().layer]} pointerEvents="box-none">
+      <Animated.View entering={backdropIn} exiting={backdropOut} style={[StyleSheet.absoluteFill, st().backdrop]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Fechar" />
       </Animated.View>
-      <Animated.View style={[s.wrap, { top: insets.top + 10 }, lift]} pointerEvents="box-none">
-        <Animated.View entering={sheetIn} exiting={sheetOut} style={s.sheet}>
-          <View style={s.grab} />
+      <Animated.View style={[st().wrap, { top: insets.top + 10 }, lift]} pointerEvents="box-none">
+        <Animated.View entering={sheetIn} exiting={sheetOut} style={st().sheet}>
+          <View style={st().grab} />
           {media}
           {title ? (
-            <View style={s.head}>
+            <View style={st().head}>
               <Serif size={27} style={{ flex: 1 }}>{title}</Serif>
               <IconBtn icon="x" label="Fechar" onPress={onClose} />
             </View>
           ) : (
-            <View style={s.floatX}><IconBtn icon="x" label="Fechar" onPress={onClose} /></View>
+            <View style={st().floatX}><IconBtn icon="x" label="Fechar" onPress={onClose} /></View>
           )}
           <KeyboardAwareScrollView
             bottomOffset={footH + (live ? 44 : 0) + 18}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={[s.body, !title && { paddingTop: 18 }]}
+            contentContainerStyle={[st().body, !title && { paddingTop: 18 }]}
             style={{ flexShrink: 1 }}>
             {children}
           </KeyboardAwareScrollView>
           {live}
           {footer ? (
-            <Animated.View style={[s.foot, foot]}>{footer}</Animated.View>
+            <Animated.View style={[st().foot, foot]}>{footer}</Animated.View>
           ) : <Animated.View style={foot} />}
         </Animated.View>
       </Animated.View>
@@ -76,7 +76,7 @@ function SheetBody({ onClose, title, children, footer, media, live }: {
 
 export const Spacer = () => <View style={{ flex: 1 }} />;
 
-const s = StyleSheet.create({
+const st = porTema(() => StyleSheet.create({
   // Acima das telas empilhadas (Ajustes, cômodo, apê...) no Android e no navegador.
   layer: { zIndex: 1000, elevation: 1000 },
   backdrop: { backgroundColor: C.backdrop },
@@ -91,7 +91,7 @@ const s = StyleSheet.create({
   floatX: { position: 'absolute', top: 16, right: 12, zIndex: 2 },
   body: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 18, gap: 14 },
   foot: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingTop: 12, borderTopWidth: 1, borderTopColor: C.line, backgroundColor: C.surface },
-});
+}));
 
 /* ---------- confirmação (excluir) ---------- */
 
@@ -125,8 +125,8 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 function ConfirmBox({ opts, done }: { opts: ConfirmOpts; done: (v: boolean) => void }) {
   useBackToClose(() => done(false));
   return (
-    <View style={[StyleSheet.absoluteFill, s.layer, { zIndex: 1100, elevation: 1100, justifyContent: 'center', padding: 24 }]}>
-      <Animated.View entering={backdropIn} exiting={backdropOut} style={[StyleSheet.absoluteFill, s.backdrop]}>
+    <View style={[StyleSheet.absoluteFill, st().layer, { zIndex: 1100, elevation: 1100, justifyContent: 'center', padding: 24 }]}>
+      <Animated.View entering={backdropIn} exiting={backdropOut} style={[StyleSheet.absoluteFill, st().backdrop]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={() => done(false)} />
       </Animated.View>
       <Animated.View entering={dialogIn} exiting={dialogOut}

@@ -8,7 +8,7 @@ import { marcos, novos, type Marco } from '@/lib/marcos';
 import { Icon } from '@/ui/Icon';
 import { AccentCtx, Btn, Muted, Serif, tap } from '@/ui/kit';
 import { backdropIn, backdropOut, dialogIn, dialogOut } from '@/ui/motion';
-import { ACCENT, C, soft } from '@/ui/theme';
+import { ACCENT, C, porTema, soft } from '@/ui/theme';
 
 // Comemora os marcos do casal (src/lib/marcos.ts) uma vez em cada aparelho: na primeira vez só
 // anota o que já estava feito; depois, cada marco novo, feito por qualquer um dos dois, ganha confete.
@@ -65,16 +65,16 @@ function Festa({ m, onClose }: { m: Marco; onClose: () => void }) {
 
   return (
     <AccentCtx.Provider value={accent}>
-      <View style={[StyleSheet.absoluteFill, s.layer]}>
-        <Animated.View entering={backdropIn} exiting={backdropOut} style={[StyleSheet.absoluteFill, s.backdrop]}>
+      <View style={[StyleSheet.absoluteFill, estilos().layer]}>
+        <Animated.View entering={backdropIn} exiting={backdropOut} style={[StyleSheet.absoluteFill, estilos().backdrop]}>
           <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Fechar comemoração" />
         </Animated.View>
         <View style={StyleSheet.absoluteFill} pointerEvents="none">
           {Array.from({ length: 36 }, (_, i) => <Confete key={i} i={i} w={width} h={height} />)}
         </View>
-        <View style={s.center} pointerEvents="box-none">
-          <Animated.View entering={dialogIn} exiting={dialogOut} style={s.card} accessibilityRole="alert">
-            <View style={[s.badge, { backgroundColor: soft(accent) }]}>
+        <View style={estilos().center} pointerEvents="box-none">
+          <Animated.View entering={dialogIn} exiting={dialogOut} style={estilos().card} accessibilityRole="alert">
+            <View style={[estilos().badge, { backgroundColor: soft(accent) }]}>
               <Icon name={m.icon} size={30} color={accent} />
             </View>
             <Serif size={28} center>{m.title}</Serif>
@@ -87,7 +87,7 @@ function Festa({ m, onClose }: { m: Marco; onClose: () => void }) {
   );
 }
 
-const CORES = [C.coral, ACCENT.casa, ACCENT.switch, ACCENT.ape, ACCENT.viagem, C.mid, C.ok];
+const CORES = porTema(() => [C.coral, ACCENT.casa, ACCENT.switch, ACCENT.ape, ACCENT.viagem, C.mid, C.ok]);
 // "Aleatório" fixo por peça (sem Math.random no render).
 const rnd = (n: number) => { const x = Math.sin(n * 12.9898) * 43758.5453; return x - Math.floor(x); };
 
@@ -102,10 +102,10 @@ function Confete({ i, w, h }: { i: number; w: number; h: number }) {
     const p = (y.get() + 30) / (h + 60);
     return { transform: [{ translateX: x0 + drift * p }, { translateY: y.get() }, { rotate: `${spin * p}deg` }] };
   });
-  return <Animated.View style={[s.piece, { backgroundColor: CORES[i % CORES.length], width: i % 3 ? 8 : 6, height: i % 3 ? 12 : 6, borderRadius: i % 3 ? 2 : 3 }, st]} />;
+  return <Animated.View style={[estilos().piece, { backgroundColor: CORES()[i % CORES().length], width: i % 3 ? 8 : 6, height: i % 3 ? 12 : 6, borderRadius: i % 3 ? 2 : 3 }, st]} />;
 }
 
-const s = StyleSheet.create({
+const estilos = porTema(() => StyleSheet.create({
   layer: { zIndex: 1300, elevation: 1300 },
   backdrop: { backgroundColor: C.backdrop },
   center: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, alignItems: 'center', justifyContent: 'center', padding: 24 },
@@ -115,4 +115,4 @@ const s = StyleSheet.create({
   },
   badge: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   piece: { position: 'absolute', left: 0, top: 0 },
-});
+}));

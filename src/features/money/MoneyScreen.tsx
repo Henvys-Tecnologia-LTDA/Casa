@@ -8,13 +8,13 @@ import { Legend, StackedBars, type Series } from '@/ui/Chart';
 import { Icon } from '@/ui/Icon';
 import { Btn, Card, Dot, DuoBar, Empty, Meter, Muted, Note, Panel, Pill, Serif, Summary, Txt, ViewHead } from '@/ui/kit';
 import { AppHeader, Appear, Loading, Screen } from '@/ui/Screen';
-import { ACCENT, C, R, soft } from '@/ui/theme';
+import { ACCENT, C, porTema, R, soft } from '@/ui/theme';
 
 import { useSheets } from '../sheetsCtx';
 import { AcertoPanel } from './AcertoPanel';
 import { GastosPanel } from './GastosPanel';
 
-const SRC_COLORS: Record<string, string> = { casa: C.s1, switch: C.s2, ape: C.s3, viagem: C.s4 };
+const SRC_COLORS = porTema((): Record<string, string> => ({ casa: C.s1, switch: C.s2, ape: C.s3, viagem: C.s4 }));
 
 export function MoneyScreen() {
   const d = useData();
@@ -27,7 +27,7 @@ export function MoneyScreen() {
   const saved = gs.reduce((s, g) => s + g.saved, 0), left = gs.reduce((s, g) => s + g.left, 0), per = gs.reduce((s, g) => s + g.per, 0);
   const any = cal.some(m => m.total > 0);
   const used = SRC.filter(([k]) => cal.some(m => m.src[k] > 0));
-  const series: Series[] = used.map(([k, t]) => ({ key: k, label: k === 'ape' ? t : d.tabLabel(k), color: SRC_COLORS[k] }));
+  const series: Series[] = used.map(([k, t]) => ({ key: k, label: k === 'ape' ? t : d.tabLabel(k), color: SRC_COLORS()[k] }));
   const accent = ACCENT.dinheiro;
 
   return (
@@ -88,7 +88,7 @@ export function MoneyScreen() {
                         {top.map((e, i) => (
                           <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 1 }}>
-                              <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: SRC_COLORS[e.src] }} />
+                              <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: SRC_COLORS()[e.src] }} />
                               <Muted size={13.5} style={{ flexShrink: 1 }}>{e.label}</Muted>
                             </View>
                             <Txt size={13.5}>{money(e.amount)}</Txt>

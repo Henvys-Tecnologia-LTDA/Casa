@@ -7,17 +7,17 @@ import { Btn, Empty, LikeBtn, Meter, Mini, Minis, Muted, Note, Panel, Pill, Rows
 import { Legend, StackedBars, type Series } from '@/ui/Chart';
 import { Photo } from '@/ui/Photo';
 import { BackBar, Loading, Screen } from '@/ui/Screen';
-import { ACCENT, C, R, soft } from '@/ui/theme';
+import { ACCENT, C, porTema, R, soft } from '@/ui/theme';
 import { useToast } from '@/ui/Toast';
 
 import { useSheets } from '../sheetsCtx';
 import { Badge } from './ApeHome';
 
-const SERIES: Series[] = [
+const SERIES = porTema((): Series[] => [
   { key: 'ent', label: 'Entrada', color: C.s1 },
   { key: 'fin', label: 'Financiamento + seguros', color: C.s2 },
   { key: 'fix', label: 'Condomínio + IPTU', color: C.s3 },
-];
+]);
 
 export function AptScreen({ id }: { id: string }) {
   const d = useData();
@@ -87,11 +87,11 @@ export function AptScreen({ id }: { id: string }) {
         <Note kind="warn" icon="alert">A entrada está abaixo de 20% do valor. Os bancos costumam financiar até 80% do imóvel, então talvez precisem de uma entrada maior.</Note>
       ) : null}
       <Panel title="Quanto sai por mês" icon="calendar">
-        <Legend series={SERIES} />
+        <Legend series={SERIES()} />
         {s.years.length && s.peak > 0 ? (
           <StackedBars
             totalLabel="Média por mês"
-            series={SERIES}
+            series={SERIES()}
             bars={s.years.map((y, k) => ({ label: k === 0 ? 'Ano 1' : String(y.y), title: `Ano ${y.y}`, subtitle: `meses ${y.from}–${y.to}`, parts: { ent: y.ent, fin: y.fin, fix: y.fix } }))}
           />
         ) : <Muted size={12.5}>Preencham preço, entrada e juros para ver o gráfico.</Muted>}

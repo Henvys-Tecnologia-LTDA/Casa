@@ -15,7 +15,7 @@ import type { ShopList, TabKey } from '@/lib/types';
 import { Icon } from '@/ui/Icon';
 import { Chip, Label, Muted, tap, Txt } from '@/ui/kit';
 import { backdropIn, backdropOut, dialogIn, dialogOut } from '@/ui/motion';
-import { ACCENT, C, F, R, soft } from '@/ui/theme';
+import { ACCENT, C, F, porTema, R, soft } from '@/ui/theme';
 import { useToast } from '@/ui/Toast';
 
 import { useSheets } from '../sheetsCtx';
@@ -248,7 +248,7 @@ export function SearchPanel({ onClose }: { onClose: () => void }) {
 
   const panel = (
     <View style={{ flex: 1 }}>
-      <View style={s.inputRow}>
+      <View style={st().inputRow}>
         <Icon name="search" size={20} color={C.muted} />
         <TextInput
           ref={input}
@@ -262,7 +262,7 @@ export function SearchPanel({ onClose }: { onClose: () => void }) {
           onSubmitEditing={openSelected}
           blurOnSubmit={false}
           accessibilityLabel="Buscar em tudo"
-          style={s.input}
+          style={st().input}
         />
         {q ? (
           <Pressable onPress={() => changeQ('')} hitSlop={8} accessibilityLabel="Limpar busca" style={{ padding: 4 }}>
@@ -307,7 +307,7 @@ export function SearchPanel({ onClose }: { onClose: () => void }) {
         ) : null}
         {query && hits.length && !wide ? <Muted size={12.5} style={{ paddingHorizontal: 16, paddingTop: 6 }}>{resultsTxt(hits.length)}</Muted> : null}
         {lines.map(l => (l.t === 'head' ? (
-          <View key={l.key} style={s.head}>
+          <View key={l.key} style={st().head}>
             <Label>{l.count != null ? `${l.label} · ${l.count}` : l.label}</Label>
             {l.more ? (
               <Pressable onPress={() => changeGroup(l.more!)} hitSlop={8} accessibilityRole="button">
@@ -330,7 +330,7 @@ export function SearchPanel({ onClose }: { onClose: () => void }) {
       </ScrollView>
 
       {wide ? (
-        <View style={s.foot}>
+        <View style={st().foot}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap', flexShrink: 1 }}>
             <Key>↑</Key><Key>↓</Key><Muted size={12}>escolher</Muted>
             <Key>Enter</Key><Muted size={12}>abrir</Muted>
@@ -344,18 +344,18 @@ export function SearchPanel({ onClose }: { onClose: () => void }) {
 
   if (!wide) {
     return (
-      <Animated.View entering={dialogIn} exiting={dialogOut} style={[StyleSheet.absoluteFill, s.layer, { backgroundColor: C.surface, paddingTop: insets.top }]}>
+      <Animated.View entering={dialogIn} exiting={dialogOut} style={[StyleSheet.absoluteFill, st().layer, { backgroundColor: C.surface, paddingTop: insets.top }]}>
         {panel}
       </Animated.View>
     );
   }
   return (
-    <View style={[StyleSheet.absoluteFill, s.layer]} pointerEvents="box-none">
+    <View style={[StyleSheet.absoluteFill, st().layer]} pointerEvents="box-none">
       <Animated.View entering={backdropIn} exiting={backdropOut} style={[StyleSheet.absoluteFill, { backgroundColor: C.backdrop }]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Fechar busca" />
       </Animated.View>
       <View style={{ position: 'absolute', left: 16, right: 16, top: insets.top + Math.min(96, height * 0.1), alignItems: 'center' }} pointerEvents="box-none">
-        <Animated.View entering={dialogIn} exiting={dialogOut} style={[s.card, { maxHeight: height * 0.74 }]}>
+        <Animated.View entering={dialogIn} exiting={dialogOut} style={[st().card, { maxHeight: height * 0.74 }]}>
           {panel}
         </Animated.View>
       </View>
@@ -395,8 +395,8 @@ function ResultRow({ entry, hit, selected, onPress, onHover }: {
       onHoverIn={onHover}
       accessibilityRole="button"
       accessibilityLabel={`${entry.title}. ${entry.sub}`}
-      style={({ pressed }) => [s.row, (selected || pressed) && { backgroundColor: soft(accent) }]}>
-      <View style={[s.ico, { backgroundColor: entry.tab ? soft(accent) : C.sunken }]}>
+      style={({ pressed }) => [st().row, (selected || pressed) && { backgroundColor: soft(accent) }]}>
+      <View style={[st().ico, { backgroundColor: entry.tab ? soft(accent) : C.sunken }]}>
         <Icon name={entry.icon} size={18} color={accent} />
       </View>
       <View style={{ flex: 1, minWidth: 0, gap: 1 }}>
@@ -416,7 +416,7 @@ function ResultRow({ entry, hit, selected, onPress, onHover }: {
   );
 }
 
-const s = StyleSheet.create({
+const st = porTema(() => StyleSheet.create({
   layer: { zIndex: 1050, elevation: 1050 },
   card: {
     width: '100%', maxWidth: 640, backgroundColor: C.surface, borderRadius: 12, overflow: 'hidden',
@@ -431,4 +431,4 @@ const s = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingHorizontal: 16, paddingVertical: 10,
     borderTopWidth: 1, borderTopColor: C.line, backgroundColor: C.bg,
   },
-});
+}));
