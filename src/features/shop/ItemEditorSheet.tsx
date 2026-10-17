@@ -11,7 +11,7 @@ import type { Item, ItemOption, Phase, Priority, ShopList, Who } from '@/lib/typ
 import { MoneyField, MonthField, IntField } from '@/ui/fields';
 import { Icon } from '@/ui/Icon';
 import { AccentCtx, Btn, Chip, ErrText, Field, Grid2, Hint, IconBtn, Muted, SecTitle, Seg, Toggle, Txt } from '@/ui/kit';
-import { deletePhotos, Photo, pickImage, uploadPhoto, type Picked } from '@/ui/Photo';
+import { adjustPhoto, deletePhotos, Photo, pickImage, uploadPhoto, type Picked } from '@/ui/Photo';
 import { PhotoZone, usePhotoDraft } from '@/ui/PhotoZone';
 import { Sheet, Spacer, useConfirm } from '@/ui/Sheet';
 import { useApagar } from '@/ui/useApagar';
@@ -258,6 +258,10 @@ export function ItemEditorSheet({ item, secId, list, name: name0, pre, onClose }
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Btn label={chosen === o.id ? 'Escolhida' : 'Escolher esta'} kind={chosen === o.id ? 'ok' : 'ghost'} size="xs" icon={chosen === o.id ? 'check' : undefined}
                 onPress={() => setChosen(chosen === o.id ? '' : o.id)} />
+              {o.picked || o.image ? (
+                <Btn label="Ajustar foto" kind="ghost" size="xs" icon="crop"
+                  onPress={async () => { try { const pk = await adjustPhoto(o.picked, o.image); if (pk) setOpt(k, { picked: pk }); } catch (e: any) { setErr(e?.message || ''); } }} />
+              ) : null}
             </View>
           </View>
         ))}

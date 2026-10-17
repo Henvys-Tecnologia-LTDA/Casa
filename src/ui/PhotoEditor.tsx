@@ -166,13 +166,16 @@ function Editor({ img, opts, done }: { img: Picked; opts: EditOpts; done: (r: Pi
   const mudou = rot !== 0 || crop != null;
 
   async function usar() {
-    if (!t || busy) return;
+    if (!t || !dims || busy) return;
     const edit: PhotoEdit = { rotate: rot, crop: c, mode };
+    // Nada mudou: devolve a mesma foto (quem chamou sabe que não precisa enviar de novo).
     if (isPlain(edit)) { done(img); return; }
+    // Foto que veio sem tamanho (de um link ou já salva): segue com o tamanho medido aqui.
+    const src = img.width > 0 && img.height > 0 ? img : { ...img, width: dims.w, height: dims.h };
     setBusy(true); setErr('');
     try {
-      const out = await renderPhoto(img, edit);
-      done({ ...out, source: img, edit });
+      const out = await renderPhoto(src, edit);
+      done({ ...out, source: src, edit });
     } catch (e: any) {
       setErr(e?.message || 'Não foi possível preparar a foto.');
       setBusy(false);

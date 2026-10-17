@@ -1,4 +1,4 @@
-import { File } from 'expo-file-system';
+import { File, Paths } from 'expo-file-system';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useState } from 'react';
@@ -86,6 +86,58 @@ export async function pickImage(source: 'library' | 'camera' = 'library', opts?:
   if (r.canceled || !r.assets?.[0]) return null;
   const a = r.assets[0];
   return editPhoto({ uri: a.uri, width: a.width, height: a.height }, opts);
+}
+
+// Bytes de imagem com o tipo certo (a função ler-link devolve application/octet-stream).
+async function asImage(b: Blob): Promise<Blob> {
+  const h = new Uint8Array(await b.slice(0, 16).arrayBuffer());
+  const txt = String.fromCharCode(...h);
+  const type = h[0] === 0xff && h[1] === 0xd8 ? 'image/jpeg'
+    : txt.startsWith('\x89PNG') ? 'image/png'
+    : txt.startsWith('GIF8') ? 'image/gif'
+    : txt.startsWith('RIFF') && txt.slice(8, 12) === 'WEBP' ? 'image/webp'
+    : txt.slice(4, 12) === 'ftypavif' ? 'image/avif'
+    : /^\s*<(\?xml|svg)/i.test(txt) ? 'image/svg+xml'
+    : 'image/jpeg';
+  return new Blob([b], { type });
+}
+
+/**
+ * Uma foto que já está no app (no Supabase, num link de loja ou no aparelho) como arquivo local, para
+ * abrir no editor. No celular, baixa para o cache; no navegador, lê direto e, se a loja não deixar
+ * (CORS), pela função ler-link.
+ */
+export async function loadPhoto(src: string): Promise<Picked> {
+  const url = isLocal(src) ? src : await signedUrl(src);
+  if (!url) throw new Error('Não foi possível abrir esta foto.');
+  if (!/^https?:/i.test(url)) return { uri: url, width: 0, height: 0 };
+  if (Platform.OS !== 'web') {
+    const file = await File.downloadFileAsync(url, new File(Paths.cache, `ajuste-${uuid()}.img`));
+    return { uri: file.uri, width: 0, height: 0 };
+  }
+  try {
+    const res = await fetch(url, { mode: 'cors', credentials: 'omit' });
+    if (res.ok) {
+      const b = await res.blob();
+      if (b.type.startsWith('image/')) return { uri: URL.createObjectURL(b), width: 0, height: 0 };
+    }
+  } catch {}
+  const { data, error } = await supabase.functions.invoke('ler-link', { body: { foto: url } });
+  if (error || !(data instanceof Blob)) throw new Error('A loja não deixou baixar essa foto para ajustar.');
+  return { uri: URL.createObjectURL(await asImage(data)), width: 0, height: 0 };
+}
+
+/**
+ * Abre o editor na foto que está no formulário: a escolhida agora (a partir da original, com o último
+ * ajuste) ou a que já estava salva ou veio do link. Devolve a foto nova, ou null se cancelaram ou se
+ * nada mudou.
+ */
+export async function adjustPhoto(picked: Picked | null, current: string, opts?: EditOpts): Promise<Picked | null> {
+  if (picked) return editPhoto(picked.source ?? picked, { ...opts, initial: picked.edit });
+  if (!current) return null;
+  const src = await loadPhoto(current);
+  const out = await editPhoto(src, opts);
+  return out && out !== src ? out : null;
 }
 
 // Envia para a pasta do casal. A foto que passou pelo editor já vem pronta (girada, cortada,

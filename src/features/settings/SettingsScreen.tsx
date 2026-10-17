@@ -11,7 +11,7 @@ import { TAB_HINT, TAB_ORDER } from '@/lib/tabs';
 import { MoneyField } from '@/ui/fields';
 import { Icon } from '@/ui/Icon';
 import { Btn, Chip, ErrText, Field, Grid2, Hint, Muted, Panel, Pill, Serif, Txt } from '@/ui/kit';
-import { deletePhotos, pickImage, uploadPhoto } from '@/ui/Photo';
+import { adjustPhoto, deletePhotos, pickImage, uploadPhoto } from '@/ui/Photo';
 import { BackBar, CoupleAvatar, Screen } from '@/ui/Screen';
 import { useConfirm } from '@/ui/Sheet';
 import { ACCENT, C, F, soft } from '@/ui/theme';
@@ -60,10 +60,12 @@ export function SettingsScreen() {
     } catch (e: any) { setErr(e?.message || 'Não foi possível salvar.'); } finally { setBusy(false); }
   }
 
-  async function changePhoto(source: 'library' | 'camera') {
+  // A foto do casal aparece num círculo: o editor já abre no quadrado, com o círculo marcado.
+  // "Ajustar" abre o editor na foto atual.
+  async function changePhoto(source: 'library' | 'camera' | 'ajustar') {
     try {
-      // A foto do casal aparece num círculo: o editor já abre no quadrado, com o círculo marcado.
-      const img = await pickImage(source, { mode: 'quadrado', round: true });
+      const opts = { mode: 'quadrado', round: true } as const;
+      const img = source === 'ajustar' ? await adjustPhoto(null, h?.photo || '', opts) : await pickImage(source, opts);
       if (!img) return;
       setPhotoBusy(true);
       const old = h?.photo;
@@ -108,6 +110,7 @@ export function SettingsScreen() {
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               <Btn label="Galeria" kind="ghost" size="sm" icon="image" busy={photoBusy} onPress={() => changePhoto('library')} />
               {Platform.OS !== 'web' ? <Btn label="Câmera" kind="ghost" size="sm" icon="camera" onPress={() => changePhoto('camera')} /> : null}
+              {h?.photo ? <Btn label="Ajustar" kind="ghost" size="sm" icon="crop" onPress={() => changePhoto('ajustar')} /> : null}
               {h?.photo ? <Btn label="Remover" kind="danger" size="sm" onPress={removePhoto} /> : null}
             </View>
           </View>
